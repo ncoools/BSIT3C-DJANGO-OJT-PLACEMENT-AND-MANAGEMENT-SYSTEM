@@ -581,6 +581,46 @@ ALTER TABLE `tblinfo`
   ADD CONSTRAINT `tblinfo_user_id_4a36749d_fk_auth_user_id` FOREIGN KEY (`user_id`) REFERENCES `auth_user` (`id`);
 COMMIT;
 
+CREATE TABLE departments (
+    department_id   INT AUTO_INCREMENT PRIMARY KEY,
+    department_name VARCHAR(100) NOT NULL UNIQUE,
+    department_head VARCHAR(100)
+);
+
+CREATE TABLE students (
+    student_id     INT AUTO_INCREMENT PRIMARY KEY,
+    student_number VARCHAR(20)  NOT NULL UNIQUE,
+    first_name     VARCHAR(50)  NOT NULL,
+    last_name      VARCHAR(50)  NOT NULL,
+    email          VARCHAR(100),
+    contact_no     VARCHAR(20),
+    year_level     TINYINT,
+    department_id  INT NOT NULL,
+    FOREIGN KEY (department_id) REFERENCES departments(department_id)
+);
+
+CREATE TABLE companies (
+    company_id     INT AUTO_INCREMENT PRIMARY KEY,
+    company_name   VARCHAR(150) NOT NULL,
+    address        VARCHAR(255),
+    contact_person VARCHAR(100),
+    contact_no     VARCHAR(20),
+    email          VARCHAR(100)
+);
+
+CREATE TABLE supervisors (
+    supervisor_id   INT AUTO_INCREMENT PRIMARY KEY,
+    first_name      VARCHAR(50) NOT NULL,
+    last_name       VARCHAR(50) NOT NULL,
+    supervisor_type ENUM('School', 'Company') NOT NULL,
+    email           VARCHAR(100),
+    contact_no      VARCHAR(20),
+    company_id      INT NULL,
+    department_id   INT NULL,
+    FOREIGN KEY (company_id) REFERENCES companies(company_id),
+    FOREIGN KEY (department_id) REFERENCES departments(department_id)
+);
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
