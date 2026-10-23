@@ -59,7 +59,33 @@
           </a>
         </li>
 
-       
+
+         <li class="nav-item">
+           <a class="nav-link {% if request.resolver_match.app_name == 'departments' %}active{% endif %}" href="{% url 'departments:list' %}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+               <i class="nav-icon fas fa-building"></i>
+            </span>
+            <span class="nav-link-title">Departments</span>
+          </a>
+        </li>
+
+         <li class="nav-item">
+           <a class="nav-link {% if request.resolver_match.app_name == 'students' %}active{% endif %}" href="{% url 'students:list' %}">
+             <span class="nav-link-icon d-md-none d-lg-inline-block">
+               <i class="nav-icon fas fa-user-graduate"></i>
+             </span>
+             <span class="nav-link-title">Students</span>
+           </a>
+         </li>
+
+         <li class="nav-item">
+           <a class="nav-link {% if request.resolver_match.app_name == 'companies' %}active{% endif %}" href="{% url 'companies:list' %}">
+             <span class="nav-link-icon d-md-none d-lg-inline-block">
+               <i class="nav-icon fas fa-building"></i>
+             </span>
+             <span class="nav-link-title">Companies</span>
+           </a>
+         </li>
 
         {% if user.is_authenticated %}
         <li class="nav-item d-lg-none">

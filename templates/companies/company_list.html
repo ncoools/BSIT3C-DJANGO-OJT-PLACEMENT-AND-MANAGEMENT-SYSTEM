@@ -1,0 +1,44 @@
+{% extends "theme/base.html" %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none mb-3">
+    <div class="row align-items-center">
+      <div class="col"><h2 class="page-title">Companies</h2></div>
+      <div class="col-auto"><a class="btn btn-primary" href="{% url 'companies:create' %}">Add company</a></div>
+    </div>
+  </div>
+  {% for message in messages %}<div class="alert alert-success">{{ message }}</div>{% endfor %}
+  <form method="get" class="mb-3">
+    <div class="input-group" style="max-width: 500px;">
+      <input class="form-control" type="search" name="q" value="{{ query }}" placeholder="Search companies">
+      <button class="btn btn-outline-primary" type="submit">Search</button>
+      {% if query %}<a class="btn btn-outline-secondary" href="{% url 'companies:list' %}">Clear</a>{% endif %}
+    </div>
+  </form>
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead><tr><th>Company</th><th>Address</th><th>Contact person</th><th>Phone</th><th>Email</th><th>File</th><th class="w-1">Actions</th></tr></thead>
+        <tbody>
+          {% for company in companies %}
+          <tr>
+            <td>{{ company.company_name }}</td>
+            <td>{{ company.address|default:"—" }}</td>
+            <td>{{ company.contact_person|default:"—" }}</td>
+            <td>{{ company.contact_no|default:"—" }}</td>
+            <td>{{ company.email|default:"—" }}</td>
+            <td>{% if company.document %}<a href="{{ company.document.url }}" target="_blank" rel="noopener">View</a>{% else %}—{% endif %}</td>
+            <td><div class="d-flex gap-2">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'companies:update' company.pk %}">Edit</a>
+              <form method="post" action="{% url 'companies:delete' company.pk %}" onsubmit="return confirm('Delete this company?');">
+                {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+              </form>
+            </div></td>
+          </tr>
+          {% empty %}<tr><td colspan="7" class="text-center text-muted p-4">No companies found.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

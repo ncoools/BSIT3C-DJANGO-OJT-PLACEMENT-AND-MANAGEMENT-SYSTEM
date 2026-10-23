@@ -1,0 +1,35 @@
+{% extends "theme/base.html" %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none mb-3">
+    <div class="row align-items-center">
+      <div class="col"><h2 class="page-title">Departments</h2></div>
+      <div class="col-auto"><a class="btn btn-primary" href="{% url 'departments:create' %}">Add department</a></div>
+    </div>
+  </div>
+  {% for message in messages %}<div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}">{{ message }}</div>{% endfor %}
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead><tr><th>Department</th><th>Department head</th><th class="w-1">Actions</th></tr></thead>
+        <tbody>
+          {% for department in departments %}
+          <tr>
+            <td>{{ department.department_name }}</td>
+            <td>{{ department.department_head|default:"—" }}</td>
+            <td>
+              <div class="d-flex gap-2">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'departments:update' department.pk %}">Edit</a>
+                <form method="post" action="{% url 'departments:delete' department.pk %}" onsubmit="return confirm('Delete this department?');">
+                  {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}<tr><td colspan="3" class="text-center text-muted p-4">No departments have been added.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
