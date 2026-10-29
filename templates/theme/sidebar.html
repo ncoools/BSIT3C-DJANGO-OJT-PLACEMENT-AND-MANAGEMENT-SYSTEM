@@ -99,41 +99,40 @@
          <li class="nav-item">
            <a class="nav-link {% if request.resolver_match.app_name == 'placements' %}active{% endif %}" href="{% url 'placements:list' %}">
              <span class="nav-link-icon d-md-none d-lg-inline-block">
-               <i class="nav-icon fas fa-briefcase"></i>
+               <i class="fa fa-briefcase"></i>
              </span>
              <span class="nav-link-title">OJT Placements</span>
            </a>
          </li>
 
-        {% if user.is_authenticated %}
-        <li class="nav-item d-lg-none">
-          <a class="nav-link" href="{% url 'logout' %}">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <i class="nav-icon fas fa-sign-out-alt"></i>
-            </span>
-            <span class="nav-link-title">Logout</span>
-          </a>
-        </li>
-        {% endif %}
+         {% if first_placement_id %}
+         <li class="nav-item">
+           <a class="nav-link {% if request.resolver_match.url_name == 'requirement_list' %}active{% endif %}" href="{% url 'placements:requirement_list' first_placement_id %}">
+             <span class="nav-link-icon d-md-none d-lg-inline-block">
+               <i class="fa fa-list"></i>
+             </span>
+             <span class="nav-link-title">Requirements</span>
+           </a>
+         </li>
 
-        <li class="nav-item mt-auto dh-nav-sidebar-footer">
-          <div class="dh-user-card">
-            <a href="{% url 'users:user_list' %}" class="d-flex align-items-center gap-2 text-decoration-none text-white min-w-0 w-100">
-              <span class="dh-avatar">{{ user.username|first|upper }}</span>
-              <span class="min-w-0 flex-grow-1">
-                <span class="dh-user-name">{{ user.username }}</span>
-                <span class="dh-user-role">
-                  {% if user.is_superuser %}Administrator{% elif user.is_authenticated %}Instructor{% endif %}
-                </span>
-              </span>
-            </a>
-            {% if user.is_authenticated %}
-            <a href="{% url 'logout' %}" class="dh-user-logout" title="Logout">
-              <i class="fas fa-sign-out-alt"></i>
-            </a>
-            {% endif %}
-          </div>
-        </li>
+         <li class="nav-item">
+           <a class="nav-link {% if request.resolver_match.url_name == 'evaluation_list' %}active{% endif %}" href="{% url 'placements:evaluation_list' first_placement_id %}">
+             <span class="nav-link-icon d-md-none d-lg-inline-block">
+               <i class="fa fa-star"></i>
+             </span>
+             <span class="nav-link-title">Evaluations</span>
+           </a>
+         </li>
+
+         <li class="nav-item">
+           <a class="nav-link {% if request.resolver_match.url_name == 'report_list' %}active{% endif %}" href="{% url 'placements:report_list' first_placement_id %}">
+             <span class="nav-link-icon d-md-none d-lg-inline-block">
+               <i class="fa fa-file"></i>
+             </span>
+             <span class="nav-link-title">Reports</span>
+           </a>
+         </li>
+         {% endif %}
 
       </ul>
     </div>
