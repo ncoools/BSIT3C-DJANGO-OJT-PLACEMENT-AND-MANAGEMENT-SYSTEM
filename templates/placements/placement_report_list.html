@@ -1,0 +1,50 @@
+{% extends "theme/base.html" %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none mb-3">
+    <div class="row align-items-center">
+      <div class="col"><h2 class="page-title">Placement reports</h2></div>
+      <div class="col-auto"><a class="btn btn-primary" href="{% url 'placements:report_create' placement.pk %}">Add report</a></div>
+    </div>
+  </div>
+  {% for message in messages %}<div class="alert alert-success">{{ message }}</div>{% endfor %}
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-sm-6">
+      <input class="form-control" type="search" name="q" value="{{ query }}" placeholder="Search reports">
+    </div>
+    <div class="col-sm-3">
+      <select class="form-select" name="status">
+        <option value="">All statuses</option>
+        {% for value, label in statuses %}
+        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto"><button class="btn btn-outline-primary" type="submit">Filter</button></div>
+    {% if query or selected_status %}<div class="col-auto"><a class="btn btn-outline-secondary" href="{% url 'placements:report_list' placement.pk %}">Clear</a></div>{% endif %}
+  </form>
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead><tr><th>Report</th><th>Date</th><th>Content</th><th>Status</th><th class="w-1">Actions</th></tr></thead>
+        <tbody>
+          {% for report in reports %}
+          <tr>
+            <td>{{ report.get_report_type_display }}</td>
+            <td>{{ report.report_date|date:"M j, Y" }}</td>
+            <td>{{ report.content|default:"—" }}</td>
+            <td>{{ report.get_status_display }}</td>
+            <td><div class="d-flex gap-2">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:report_update' placement.pk report.pk %}">Edit</a>
+              <form method="post" action="{% url 'placements:report_delete' placement.pk report.pk %}" onsubmit="return confirm('Delete this report?');">
+                {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+              </form>
+            </div></td>
+          </tr>
+          {% empty %}<tr><td colspan="5" class="text-center text-muted p-4">No reports found.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "theme/base.html" %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none mb-3">
+    <div class="row align-items-center">
+      <div class="col"><h2 class="page-title">Placement requirements</h2></div>
+      <div class="col-auto"><a class="btn btn-primary" href="{% url 'placements:requirement_create' placement.pk %}">Add requirement</a></div>
+    </div>
+  </div>
+  {% for message in messages %}<div class="alert alert-success">{{ message }}</div>{% endfor %}
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-sm-6">
+      <input class="form-control" type="search" name="q" value="{{ query }}" placeholder="Search requirements">
+    </div>
+    <div class="col-sm-3">
+      <select class="form-select" name="status">
+        <option value="">All statuses</option>
+        {% for value, label in statuses %}
+        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto"><button class="btn btn-outline-primary" type="submit">Filter</button></div>
+    {% if query or selected_status %}<div class="col-auto"><a class="btn btn-outline-secondary" href="{% url 'placements:requirement_list' placement.pk %}">Clear</a></div>{% endif %}
+  </form>
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead><tr><th>Requirement</th><th>Date submitted</th><th>File path</th><th>Status</th><th class="w-1">Actions</th></tr></thead>
+        <tbody>
+          {% for requirement in requirements %}
+          <tr>
+            <td>{{ requirement.requirement_name }}</td>
+            <td>{{ requirement.date_submitted|date:"M j, Y" }}</td>
+            <td>{{ requirement.file_path|default:"—" }}</td>
+            <td>{{ requirement.get_status_display }}</td>
+            <td><div class="d-flex gap-2">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:requirement_update' placement.pk requirement.pk %}">Edit</a>
+              <form method="post" action="{% url 'placements:requirement_delete' placement.pk requirement.pk %}" onsubmit="return confirm('Delete this requirement?');">
+                {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+              </form>
+            </div></td>
+          </tr>
+          {% empty %}<tr><td colspan="5" class="text-center text-muted p-4">No requirements found.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
