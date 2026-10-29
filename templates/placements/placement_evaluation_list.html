@@ -1,0 +1,35 @@
+{% extends "theme/base.html" %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none mb-3">
+    <div class="row align-items-center">
+      <div class="col"><h2 class="page-title">Placement evaluations</h2></div>
+      <div class="col-auto"><a class="btn btn-primary" href="{% url 'placements:evaluation_create' placement.pk %}">Add evaluation</a></div>
+    </div>
+  </div>
+  {% for message in messages %}<div class="alert alert-success">{{ message }}</div>{% endfor %}
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead><tr><th>Evaluator</th><th>Date</th><th>Score</th><th>Remarks</th><th class="w-1">Actions</th></tr></thead>
+        <tbody>
+          {% for evaluation in evaluations %}
+          <tr>
+            <td>{{ evaluation.evaluator.first_name }} {{ evaluation.evaluator.last_name }}</td>
+            <td>{{ evaluation.evaluation_date|date:"M j, Y" }}</td>
+            <td>{{ evaluation.score }}</td>
+            <td>{{ evaluation.remarks|default:"—" }}</td>
+            <td><div class="d-flex gap-2">
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:evaluation_update' placement.pk evaluation.pk %}">Edit</a>
+              <form method="post" action="{% url 'placements:evaluation_delete' placement.pk evaluation.pk %}" onsubmit="return confirm('Delete this evaluation?');">
+                {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+              </form>
+            </div></td>
+          </tr>
+          {% empty %}<tr><td colspan="5" class="text-center text-muted p-4">No evaluations found.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
