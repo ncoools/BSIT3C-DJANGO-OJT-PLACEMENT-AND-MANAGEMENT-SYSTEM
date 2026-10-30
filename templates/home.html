@@ -1,26 +1,275 @@
 {% extends "theme/base.html" %}
+
+{% block extra_css %}
+<style>
+  .dh-admin {
+    --bg: #0A2540;
+    --card: #12294e;
+    --ink: #e9edf6;
+    --mute: #9aa8c2;
+    --line: rgba(255, 255, 255, 0.1);
+    --pri: #D4AF37;
+    --ok: #16a34a;
+    --warn: #d97706;
+    --bad: #dc2626;
+    --info: #2563eb;
+  }
+  .dh-admin .top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 28px;
+    background: rgba(18, 41, 78, 0.92);
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    backdrop-filter: blur(6px);
+    z-index: 5;
+  }
+  .dh-admin .top input {
+    flex: 1;
+    max-width: 380px;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font: inherit;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--ink);
+  }
+  .dh-admin .top input::placeholder { color: var(--mute); }
+  .dh-admin .top .sp { flex: 1; }
+  .dh-admin .bell { position: relative; font-size: 18px; }
+  .dh-admin .bell s { position: absolute; top: -4px; right: -6px; background: var(--bad); color: #fff; font-size: 10px; border-radius: 99px; padding: 0 5px; text-decoration: none; }
+  .dh-admin .me { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .dh-admin .av { width: 36px; height: 36px; border-radius: 50%; background: var(--pri); color: #0A2540; display: grid; place-items: center; font-weight: 600; }
+  .dh-admin .me small { display: block; color: var(--mute); font-size: 12px; }
+  .dh-admin .wrap { padding: 26px 28px 40px; }
+  .dh-admin .head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
+  .dh-admin h1 { font-size: 26px; color: var(--ink); }
+  .dh-admin .head p { color: var(--mute); font-size: 14px; margin-top: 2px; }
+  .dh-admin .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .dh-admin .btn { font: inherit; font-size: 14px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); color: var(--ink); cursor: pointer; }
+  .dh-admin .btn.p { background: var(--pri); border-color: var(--pri); color: #0A2540; }
+  .dh-admin .grid { display: grid; gap: 16px; }
+  .dh-admin .stats { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: 16px; }
+  .dh-admin .card { background: var(--card); border-radius: 14px; padding: 18px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); border: 1px solid var(--line); }
+  .dh-admin .stat .l { font-size: 13px; color: var(--mute); }
+  .dh-admin .stat .v { font-size: 30px; font-weight: 600; margin: 4px 0; color: var(--ink); }
+  .dh-admin .stat .d { font-size: 12px; color: var(--mute); }
+  .dh-admin .stat .d b { color: var(--ok); font-weight: 600; }
+  .dh-admin .stat .d b.w { color: var(--warn); }
+  .dh-admin .stat .ic { float: right; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: rgba(212, 175, 55, 0.14); }
+  .dh-admin .row { display: grid; grid-template-columns: repeat(12, 1fr); margin-bottom: 16px; }
+  .dh-admin .c4 { grid-column: span 4; }
+  .dh-admin .c5 { grid-column: span 5; }
+  .dh-admin .c6 { grid-column: span 6; }
+  .dh-admin .c7 { grid-column: span 7; }
+  .dh-admin .c8 { grid-column: span 8; }
+  .dh-admin h2 { font-size: 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; color: var(--ink); }
+  .dh-admin h2 a { font-size: 13px; color: var(--pri); font-weight: 500; text-decoration: none; }
+  .dh-admin .donut { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .dh-admin .donut svg { width: 150px; height: 150px; flex: none; }
+  .dh-admin .leg { list-style: none; padding: 0; font-size: 14px; flex: 1; min-width: 130px; }
+  .dh-admin .leg li { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--ink); }
+  .dh-admin .leg i { width: 10px; height: 10px; border-radius: 3px; }
+  .dh-admin .leg b { margin-left: auto; }
+  .dh-admin .bar { display: grid; grid-template-columns: 110px 1fr 36px; align-items: center; gap: 10px; font-size: 14px; margin-bottom: 11px; color: var(--ink); }
+  .dh-admin .bar div { height: 10px; background: rgba(255, 255, 255, 0.08); border-radius: 99px; overflow: hidden; }
+  .dh-admin .bar div span { display: block; height: 100%; background: var(--pri); border-radius: 99px; }
+  .dh-admin .bar em { font-style: normal; color: var(--mute); text-align: right; }
+  .dh-admin .alert { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--ink); }
+  .dh-admin .alert:last-child { border: 0; }
+  .dh-admin .alert .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; flex: none; }
+  .dh-admin .alert small { display: block; color: var(--mute); font-size: 12px; }
+  .dh-admin .alert a { margin-left: auto; font-size: 13px; color: var(--pri); text-decoration: none; white-space: nowrap; }
+  .dh-admin .tw { overflow-x: auto; }
+  .dh-admin table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .dh-admin th { text-align: left; font-weight: 500; color: var(--mute); font-size: 13px; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .dh-admin td { padding: 11px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; color: var(--ink); }
+  .dh-admin tr:last-child td { border: 0; }
+  .dh-admin .pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; font-weight: 500; }
+  .dh-admin .pill.ok { background: rgba(22, 163, 74, 0.18); color: #4ade80; }
+  .dh-admin .pill.wa { background: rgba(217, 119, 6, 0.18); color: #fbbf24; }
+  .dh-admin .pill.in { background: rgba(37, 99, 235, 0.18); color: #93c5fd; }
+  .dh-admin .pill.ba { background: rgba(220, 38, 38, 0.18); color: #f87171; }
+  .dh-admin .hrs { display: flex; align-items: center; gap: 8px; }
+  .dh-admin .hrs div { width: 70px; height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 99px; overflow: hidden; }
+  .dh-admin .hrs div span { display: block; height: 100%; background: var(--pri); border-radius: 99px; }
+  .dh-admin .qa { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dh-admin .qa .btn { text-align: left; padding: 14px; }
+  @media (max-width: 1000px) {
+    .dh-admin .c4, .dh-admin .c5, .dh-admin .c6, .dh-admin .c7, .dh-admin .c8 { grid-column: span 12; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-xl">
-  <div class="page-header d-print-none" aria-label="Page header">
-    <div class="container-xl">
-      <div class="row align-items-center">
-        <div class="col">
-          <div class="page-pretitle">Overview</div>
-          <div class="d-flex align-items-center gap-3 flex-wrap d-none d-md-flex">
-            <h2 class="page-title mb-0">Dashboard</h2>
-          </div>
-          <h2 class="page-title mb-0 d-md-none">Dashboard</h2>
-        </div>
+<div class="dh-admin">
+  <header class="top">
+    <input type="search" placeholder="Search students, companies, placements" aria-label="Search">
+    <span class="sp"></span>
+    <span class="bell" aria-label="Notifications">🔔<s>5</s></span>
+    <div class="me"><div class="av">AD</div><div>Admin<small>OJT Coordinator</small></div></div>
+  </header>
+
+  <div class="wrap">
+    <div class="head">
+      <div>
+        <h1>Dashboard</h1>
+        <p>School year 2026–2027 · 1st semester</p>
+      </div>
+      <div class="btns">
+        <button class="btn" type="button">Generate report</button>
+        <button class="btn" type="button">Add company</button>
+        <button class="btn p" type="button">+ New placement</button>
       </div>
     </div>
-  </div>
-  <br>
 
-  <div class="card">
-    <div class="card-body text-muted">
-      Dashboard
-    </div>
-  </div>
+    <section class="grid stats">
+      <div class="card stat">
+        <span class="ic">🎓</span>
+        <div class="l">Total students</div>
+        <div class="v">248</div>
+        <div class="d"><b>+12</b> enrolled this term</div>
+      </div>
+      <div class="card stat">
+        <span class="ic">💼</span>
+        <div class="l">Currently placed</div>
+        <div class="v">161</div>
+        <div class="d"><b>65%</b> of all students</div>
+      </div>
+      <div class="card stat">
+        <span class="ic">⏳</span>
+        <div class="l">Not yet placed</div>
+        <div class="v">59</div>
+        <div class="d"><b class="w">Needs action</b> before Nov 15</div>
+      </div>
+      <div class="card stat">
+        <span class="ic">🏢</span>
+        <div class="l">Partner companies</div>
+        <div class="v">37</div>
+        <div class="d"><b class="w">3</b> MOAs expiring soon</div>
+      </div>
+      <div class="card stat">
+        <span class="ic">☰</span>
+        <div class="l">Pending requirements</div>
+        <div class="v">14</div>
+        <div class="d">Awaiting your review</div>
+      </div>
+      <div class="card stat">
+        <span class="ic">✅</span>
+        <div class="l">Completed OJT</div>
+        <div class="v">28</div>
+        <div class="d"><b>11%</b> of all students</div>
+      </div>
+    </section>
 
+    <section class="grid row">
+      <div class="card c5">
+        <h2>Placements by status</h2>
+        <div class="donut">
+          <svg viewBox="0 0 42 42" role="img" aria-label="Placements by status">
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-width="6"></circle>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--pri)" stroke-width="6" stroke-dasharray="64.9 35.1" transform="rotate(-90 21 21)"></circle>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--ok)" stroke-width="6" stroke-dasharray="11.3 88.7" stroke-dashoffset="-64.9" transform="rotate(-90 21 21)"></circle>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--warn)" stroke-width="6" stroke-dasharray="18.1 81.9" stroke-dashoffset="-76.2" transform="rotate(-90 21 21)"></circle>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--bad)" stroke-width="6" stroke-dasharray="5.7 94.3" stroke-dashoffset="-94.3" transform="rotate(-90 21 21)"></circle>
+            <text x="21" y="22" text-anchor="middle" font-size="7" font-weight="600" fill="var(--ink)">248</text>
+            <text x="21" y="27" text-anchor="middle" font-size="2.6" fill="var(--mute)">students</text>
+          </svg>
+          <ul class="leg">
+            <li><i style="background:var(--pri)"></i>Ongoing<b>161</b></li>
+            <li><i style="background:var(--ok)"></i>Completed<b>28</b></li>
+            <li><i style="background:var(--warn)"></i>Pending<b>45</b></li>
+            <li><i style="background:var(--bad)"></i>Dropped<b>14</b></li>
+          </ul>
+        </div>
+      </div>
+      <div class="card c7">
+        <h2>Students per department <a href="#">View all</a></h2>
+        <div class="bar"><span>BS Computer Sci.</span><div><span style="width:92%"></span></div><em>74</em></div>
+        <div class="bar"><span>BS Info. Tech.</span><div><span style="width:80%"></span></div><em>64</em></div>
+        <div class="bar"><span>BS Business Admin.</span><div><span style="width:62%"></span></div><em>50</em></div>
+        <div class="bar"><span>BS Hospitality</span><div><span style="width:40%"></span></div><em>32</em></div>
+        <div class="bar"><span>BS Education</span><div><span style="width:33%"></span></div><em>28</em></div>
+      </div>
+    </section>
+
+    <section class="grid row">
+      <div class="card c5">
+        <h2>Needs attention</h2>
+        <div class="alert">
+          <span class="dot" style="background:var(--bad)"></span>
+          <div>14 requirements waiting for review<small>Oldest submitted 6 days ago</small></div>
+          <a href="#">Review</a>
+        </div>
+        <div class="alert">
+          <span class="dot" style="background:var(--bad)"></span>
+          <div>59 students without a placement<small>OJT starts Nov 15</small></div>
+          <a href="#">View</a>
+        </div>
+        <div class="alert">
+          <span class="dot" style="background:var(--warn)"></span>
+          <div>3 company MOAs expire within 30 days<small>Northgate IT, Cebu Foods, BrightWorks</small></div>
+          <a href="#">Renew</a>
+        </div>
+        <div class="alert">
+          <span class="dot" style="background:var(--warn)"></span>
+          <div>9 evaluations due this week<small>Supervisors have been notified</small></div>
+          <a href="#">View</a>
+        </div>
+        <div class="alert">
+          <span class="dot" style="background:var(--info)"></span>
+          <div>6 placements end in 7 days<small>Confirm final hours</small></div>
+          <a href="#">View</a>
+        </div>
+      </div>
+      <div class="card c7">
+        <h2>Recent placements <a href="#">View all</a></h2>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr><th>Student</th><th>Company</th><th>Hours</th><th>Status</th><th>Start</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Maria Santos</td><td>Northgate IT Solutions</td><td><div class="hrs"><div><span style="width:72%"></span></div>288/400</div></td><td><span class="pill in">Ongoing</span></td><td>Aug 12</td></tr>
+              <tr><td>John dela Cruz</td><td>Cebu Foods Corp.</td><td><div class="hrs"><div><span style="width:30%"></span></div>120/400</div></td><td><span class="pill in">Ongoing</span></td><td>Sep 20</td></tr>
+              <tr><td>Ana Reyes</td><td>BrightWorks Media</td><td><div class="hrs"><div><span style="width:0%"></span></div>0/400</div></td><td><span class="pill wa">Pending</span></td><td>Nov 15</td></tr>
+              <tr><td>Paolo Lim</td><td>Metro Bank</td><td><div class="hrs"><div><span style="width:100%"></span></div>400/400</div></td><td><span class="pill ok">Completed</span></td><td>Jun 3</td></tr>
+              <tr><td>Kyla Mendoza</td><td>Sunrise Hotel</td><td><div class="hrs"><div><span style="width:18%"></span></div>72/400</div></td><td><span class="pill ba">Dropped</span></td><td>Sep 1</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid row">
+      <div class="card c8">
+        <h2>Requirements awaiting review <a href="#">View all</a></h2>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr><th>Student</th><th>Document</th><th>Submitted</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Ana Reyes</td><td>Parent consent form</td><td>Oct 24</td><td><span class="pill wa">For review</span></td><td><button class="btn" type="button">Open</button></td></tr>
+              <tr><td>Luis Garcia</td><td>Medical certificate</td><td>Oct 26</td><td><span class="pill wa">For review</span></td><td><button class="btn" type="button">Open</button></td></tr>
+              <tr><td>Rica Tan</td><td>Resume</td><td>Oct 28</td><td><span class="pill ba">Needs revision</span></td><td><button class="btn" type="button">Open</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card c4">
+        <h2>Quick actions</h2>
+        <div class="qa">
+          <button class="btn" type="button">+ Student</button>
+          <button class="btn" type="button">+ Company</button>
+          <button class="btn" type="button">+ Supervisor</button>
+          <button class="btn" type="button">+ Placement</button>
+        </div>
+      </div>
+    </section>
+  </div>
 </div>
 {% endblock %}
