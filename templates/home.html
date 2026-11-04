@@ -130,38 +130,38 @@
       <div class="card stat">
         <span class="ic">🎓</span>
         <div class="l">Total students</div>
-        <div class="v">248</div>
-        <div class="d"><b>+12</b> enrolled this term</div>
+        <div class="v">{{ total_students }}</div>
+        <div class="d"><b>{{ total_students }}</b> on roster</div>
       </div>
       <div class="card stat">
         <span class="ic">💼</span>
         <div class="l">Currently placed</div>
-        <div class="v">161</div>
-        <div class="d"><b>65%</b> of all students</div>
+        <div class="v">{{ active_placements }}</div>
+        <div class="d"><b>{{ active_pct }}%</b> of all students</div>
       </div>
       <div class="card stat">
         <span class="ic">⏳</span>
         <div class="l">Not yet placed</div>
-        <div class="v">59</div>
+        <div class="v">{{ unplaced_students }}</div>
         <div class="d"><b class="w">Needs action</b> before Nov 15</div>
       </div>
       <div class="card stat">
         <span class="ic">🏢</span>
         <div class="l">Partner companies</div>
-        <div class="v">37</div>
+        <div class="v">{{ partner_companies }}</div>
         <div class="d"><b class="w">3</b> MOAs expiring soon</div>
       </div>
       <div class="card stat">
         <span class="ic">☰</span>
         <div class="l">Pending requirements</div>
-        <div class="v">14</div>
+        <div class="v">{{ pending_requirements }}</div>
         <div class="d">Awaiting your review</div>
       </div>
       <div class="card stat">
         <span class="ic">✅</span>
         <div class="l">Completed OJT</div>
-        <div class="v">28</div>
-        <div class="d"><b>11%</b> of all students</div>
+        <div class="v">{{ completed_placements }}</div>
+        <div class="d"><b>{{ completed_pct }}%</b> of all students</div>
       </div>
     </section>
 
@@ -171,28 +171,28 @@
         <div class="donut">
           <svg viewBox="0 0 42 42" role="img" aria-label="Placements by status">
             <circle cx="21" cy="21" r="15.9" fill="none" stroke="rgba(255, 255, 255, 0.08)" stroke-width="6"></circle>
-            <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--pri)" stroke-width="6" stroke-dasharray="64.9 35.1" transform="rotate(-90 21 21)"></circle>
-            <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--ok)" stroke-width="6" stroke-dasharray="11.3 88.7" stroke-dashoffset="-64.9" transform="rotate(-90 21 21)"></circle>
-            <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--warn)" stroke-width="6" stroke-dasharray="18.1 81.9" stroke-dashoffset="-76.2" transform="rotate(-90 21 21)"></circle>
-            <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--bad)" stroke-width="6" stroke-dasharray="5.7 94.3" stroke-dashoffset="-94.3" transform="rotate(-90 21 21)"></circle>
-            <text x="21" y="22" text-anchor="middle" font-size="7" font-weight="600" fill="var(--ink)">248</text>
-            <text x="21" y="27" text-anchor="middle" font-size="2.6" fill="var(--mute)">students</text>
+            {% for seg in status_segments %}
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="{{ seg.color }}" stroke-width="6" stroke-dasharray="{{ seg.dasharray }}" stroke-dashoffset="{{ seg.offset }}" transform="rotate(-90 21 21)"></circle>
+            {% endfor %}
+            <text x="21" y="22" text-anchor="middle" font-size="7" font-weight="600" fill="var(--ink)">{{ total_placements }}</text>
+            <text x="21" y="27" text-anchor="middle" font-size="2.6" fill="var(--mute)">placements</text>
           </svg>
           <ul class="leg">
-            <li><i style="background:var(--pri)"></i>Ongoing<b>161</b></li>
-            <li><i style="background:var(--ok)"></i>Completed<b>28</b></li>
-            <li><i style="background:var(--warn)"></i>Pending<b>45</b></li>
-            <li><i style="background:var(--bad)"></i>Dropped<b>14</b></li>
+            {% for seg in status_segments %}
+            <li><i style="background:{{ seg.color }}"></i>{{ seg.label }}<b>{{ seg.value }}</b></li>
+            {% endfor %}
           </ul>
         </div>
       </div>
       <div class="card c7">
         <h2>Students per department <a href="#">View all</a></h2>
-        <div class="bar"><span>BS Computer Sci.</span><div><span style="width:92%"></span></div><em>74</em></div>
-        <div class="bar"><span>BS Info. Tech.</span><div><span style="width:80%"></span></div><em>64</em></div>
-        <div class="bar"><span>BS Business Admin.</span><div><span style="width:62%"></span></div><em>50</em></div>
-        <div class="bar"><span>BS Hospitality</span><div><span style="width:40%"></span></div><em>32</em></div>
-        <div class="bar"><span>BS Education</span><div><span style="width:33%"></span></div><em>28</em></div>
+        {% for dept in department_stats %}
+        <div class="bar">
+          <span>{{ dept.department_name }}</span>
+          <div><span style="width:{{ dept.student_width }}%"></span></div>
+          <em>{{ dept.student_count }}</em>
+        </div>
+        {% endfor %}
       </div>
     </section>
 
@@ -201,12 +201,12 @@
         <h2>Needs attention</h2>
         <div class="alert">
           <span class="dot" style="background:var(--bad)"></span>
-          <div>14 requirements waiting for review<small>Oldest submitted 6 days ago</small></div>
+          <div>{{ pending_requirements }} requirements waiting for review<small>Oldest submitted 6 days ago</small></div>
           <a href="#">Review</a>
         </div>
         <div class="alert">
           <span class="dot" style="background:var(--bad)"></span>
-          <div>59 students without a placement<small>OJT starts Nov 15</small></div>
+          <div>{{ unplaced_students }} students without a placement<small>OJT starts Nov 15</small></div>
           <a href="#">View</a>
         </div>
         <div class="alert">
@@ -233,11 +233,15 @@
               <tr><th>Student</th><th>Company</th><th>Hours</th><th>Status</th><th>Start</th></tr>
             </thead>
             <tbody>
-              <tr><td>Maria Santos</td><td>Northgate IT Solutions</td><td><div class="hrs"><div><span style="width:72%"></span></div>288/400</div></td><td><span class="pill in">Ongoing</span></td><td>Aug 12</td></tr>
-              <tr><td>John dela Cruz</td><td>Cebu Foods Corp.</td><td><div class="hrs"><div><span style="width:30%"></span></div>120/400</div></td><td><span class="pill in">Ongoing</span></td><td>Sep 20</td></tr>
-              <tr><td>Ana Reyes</td><td>BrightWorks Media</td><td><div class="hrs"><div><span style="width:0%"></span></div>0/400</div></td><td><span class="pill wa">Pending</span></td><td>Nov 15</td></tr>
-              <tr><td>Paolo Lim</td><td>Metro Bank</td><td><div class="hrs"><div><span style="width:100%"></span></div>400/400</div></td><td><span class="pill ok">Completed</span></td><td>Jun 3</td></tr>
-              <tr><td>Kyla Mendoza</td><td>Sunrise Hotel</td><td><div class="hrs"><div><span style="width:18%"></span></div>72/400</div></td><td><span class="pill ba">Dropped</span></td><td>Sep 1</td></tr>
+            {% for placement in recent_placements %}
+              <tr>
+                <td>{{ placement.student.first_name }} {{ placement.student.last_name }}</td>
+                <td>{{ placement.company.company_name }}</td>
+                <td><div class="hrs"><div><span style="width:{{ placement.completed_hours }}%"></span></div>{{ placement.completed_hours }}/{{ placement.required_hours }}</div></td>
+                <td><span class="pill {% if placement.status == 'in_progress' %}in{% elif placement.status == 'completed' %}ok{% elif placement.status == 'planned' %}wa{% else %}ba{% endif %}">{{ placement.get_status_display }}</span></td>
+                <td>{{ placement.start_date }}</td>
+              </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>
@@ -253,9 +257,15 @@
               <tr><th>Student</th><th>Document</th><th>Submitted</th><th>Status</th><th></th></tr>
             </thead>
             <tbody>
-              <tr><td>Ana Reyes</td><td>Parent consent form</td><td>Oct 24</td><td><span class="pill wa">For review</span></td><td><button class="btn" type="button">Open</button></td></tr>
-              <tr><td>Luis Garcia</td><td>Medical certificate</td><td>Oct 26</td><td><span class="pill wa">For review</span></td><td><button class="btn" type="button">Open</button></td></tr>
-              <tr><td>Rica Tan</td><td>Resume</td><td>Oct 28</td><td><span class="pill ba">Needs revision</span></td><td><button class="btn" type="button">Open</button></td></tr>
+            {% for requirement in pending_requirements_list %}
+              <tr>
+                <td>{{ requirement.placement.student.first_name }} {{ requirement.placement.student.last_name }}</td>
+                <td>{{ requirement.requirement_name }}</td>
+                <td>{{ requirement.date_submitted }}</td>
+                <td><span class="pill wa">For review</span></td>
+                <td><button class="btn" type="button">Open</button></td>
+              </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>
