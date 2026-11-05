@@ -3,23 +3,25 @@
 {% block extra_css %}
 <style>
   .dh-admin {
-    --bg: #0A2540;
-    --card: #12294e;
-    --ink: #e9edf6;
-    --mute: #9aa8c2;
-    --line: rgba(255, 255, 255, 0.1);
-    --pri: #D4AF37;
-    --ok: #16a34a;
-    --warn: #d97706;
+    --bg: #1A1A1A;
+    --card: #222222;
+    --ink: #FFFFFF;
+    --mute: #C9C9C9;
+    --line: #333333;
+    --pri: #F7C325;
+    --pri-ink: #1A1A1A;
+    --ok: #4ade80;
+    --warn: #fbbf24;
     --bad: #dc2626;
     --info: #2563eb;
+    background: var(--bg);
   }
   .dh-admin .top {
     display: flex;
     align-items: center;
     gap: 16px;
     padding: 16px 28px;
-    background: rgba(18, 41, 78, 0.92);
+    background: rgba(34, 34, 34, 0.92);
     border-bottom: 1px solid var(--line);
     position: sticky;
     top: 0;
@@ -42,7 +44,7 @@
   .dh-admin .bell { position: relative; font-size: 18px; }
   .dh-admin .bell s { position: absolute; top: -4px; right: -6px; background: var(--bad); color: #fff; font-size: 10px; border-radius: 99px; padding: 0 5px; text-decoration: none; }
   .dh-admin .me { display: flex; align-items: center; gap: 10px; font-size: 14px; }
-  .dh-admin .av { width: 36px; height: 36px; border-radius: 50%; background: var(--pri); color: #0A2540; display: grid; place-items: center; font-weight: 600; }
+  .dh-admin .av { width: 36px; height: 36px; border-radius: 50%; background: var(--pri); color: var(--pri-ink); display: grid; place-items: center; font-weight: 600; }
   .dh-admin .me small { display: block; color: var(--mute); font-size: 12px; }
   .dh-admin .wrap { padding: 26px 28px 40px; }
   .dh-admin .head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
@@ -50,7 +52,7 @@
   .dh-admin .head p { color: var(--mute); font-size: 14px; margin-top: 2px; }
   .dh-admin .btns { display: flex; gap: 8px; flex-wrap: wrap; }
   .dh-admin .btn { font: inherit; font-size: 14px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); color: var(--ink); cursor: pointer; }
-  .dh-admin .btn.p { background: var(--pri); border-color: var(--pri); color: #0A2540; }
+  .dh-admin .btn.p { background: var(--pri); border-color: var(--pri); color: var(--pri-ink); }
   .dh-admin .grid { display: grid; gap: 16px; }
   .dh-admin .stats { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: 16px; }
   .dh-admin .card { background: var(--card); border-radius: 14px; padding: 18px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); border: 1px solid var(--line); }
@@ -59,7 +61,7 @@
   .dh-admin .stat .d { font-size: 12px; color: var(--mute); }
   .dh-admin .stat .d b { color: var(--ok); font-weight: 600; }
   .dh-admin .stat .d b.w { color: var(--warn); }
-  .dh-admin .stat .ic { float: right; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: rgba(212, 175, 55, 0.14); }
+  .dh-admin .stat .ic { float: right; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: rgba(247, 195, 37, 0.14); }
   .dh-admin .row { display: grid; grid-template-columns: repeat(12, 1fr); margin-bottom: 16px; }
   .dh-admin .c4 { grid-column: span 4; }
   .dh-admin .c5 { grid-column: span 5; }
