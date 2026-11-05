@@ -1,14 +1,14 @@
 :root,
 [data-bs-theme="light"] {
-  --tblr-primary: #D4AF37;
-  --tblr-primary-hover: color-mix(in srgb, var(--tblr-primary) 85%, #0A2540);
-  --tblr-primary-active: color-mix(in srgb, var(--tblr-primary) 75%, #0A2540);
-  --tblr-primary-lt: color-mix(in srgb, var(--tblr-primary) 16%, #0A2540);
-  --tblr-primary-fg: #0A2540;
-  --tblr-primary-rgb: 212, 175, 55;
-  --tblr-accent: #D4AF37;
-  --tblr-body-bg: #0A2540;
-  --tblr-body-bg-rgb: 10, 37, 64;
+  --tblr-primary: #F7C325;
+  --tblr-primary-hover: color-mix(in srgb, var(--tblr-primary) 85%, #1A1A1A);
+  --tblr-primary-active: color-mix(in srgb, var(--tblr-primary) 75%, #1A1A1A);
+  --tblr-primary-lt: color-mix(in srgb, var(--tblr-primary) 16%, #1A1A1A);
+  --tblr-primary-fg: #1A1A1A;
+  --tblr-primary-rgb: 247, 195, 37;
+  --tblr-accent: #F7C325;
+  --tblr-body-bg: #1A1A1A;
+  --tblr-body-bg-rgb: 26, 26, 26;
   --tblr-body-color: #e9edf6;
   --tblr-body-color-rgb: 233, 237, 246;
   --tblr-muted: #9aa8c2;
@@ -47,24 +47,24 @@
 
 :root:not([data-bs-theme-primary]),
 [data-bs-theme="light"]:not([data-bs-theme-primary]) {
-  --tblr-primary: #D4AF37;
-  --tblr-primary-rgb: 212, 175, 55;
+  --tblr-primary: #F7C325;
+  --tblr-primary-rgb: 247, 195, 37;
 }
 
 [data-bs-theme="dark"]:not([data-bs-theme-primary]) {
-  --tblr-primary: #D4AF37;
-  --tblr-primary-rgb: 212, 175, 55;
+  --tblr-primary: #F7C325;
+  --tblr-primary-rgb: 247, 195, 37;
 }
 
 [data-bs-theme-primary="indigo"] {
-  --tblr-primary: #D4AF37;
-  --tblr-primary-rgb: 212, 175, 55;
+  --tblr-primary: #F7C325;
+  --tblr-primary-rgb: 247, 195, 37;
 }
 
 [data-bs-theme="dark"],
 body[data-bs-theme="dark"] [data-bs-theme="light"] {
-  --tblr-body-bg: #0A2540;
-  --tblr-body-bg-rgb: 10, 37, 64;
+  --tblr-body-bg: #1A1A1A;
+  --tblr-body-bg-rgb: 26, 26, 26;
   --tblr-body-color: #e9edf6;
   --tblr-border-color: rgba(255, 255, 255, 0.1);
   --tblr-bg-surface: #12294e;
@@ -427,8 +427,8 @@ html {
   color: #fff;
   font-weight: 700;
   font-size: 0.9rem;
-  background: linear-gradient(135deg, #D4AF37 0%, #b8912f 100%);
-  box-shadow: 0 4px 10px -4px rgba(212, 175, 55, 0.8);
+  background: linear-gradient(135deg, #F7C325 0%, #D9A514 100%);
+  box-shadow: 0 4px 10px -4px rgba(247, 195, 37, 0.8);
 }
 
 .dh-user-name {
@@ -516,8 +516,8 @@ html {
   border-radius: var(--tblr-border-radius-xl);
   padding: 1.75rem 2rem;
   background:
-    radial-gradient(90% 120% at 100% 0%, rgba(212, 175, 55, 0.24) 0%, transparent 55%),
-    linear-gradient(120deg, #0A2540 0%, #12294e 55%, #173a63 100%);
+    radial-gradient(90% 120% at 100% 0%, rgba(247, 195, 37, 0.24) 0%, transparent 55%),
+    linear-gradient(120deg, #1A1A1A 0%, #222222 55%, #2b2b2b 100%);
   color: #fff;
   box-shadow: 0 20px 40px -22px rgba(23, 26, 54, 0.6);
 }
@@ -530,7 +530,7 @@ html {
   width: 20rem;
   height: 20rem;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(212, 175, 55, 0.18) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(247, 195, 37, 0.18) 0%, transparent 65%);
 }
 
 .dh-hero-inner {
@@ -560,16 +560,16 @@ html {
 }
 
 .dh-hero .btn-accent {
-  background: #D4AF37;
-  color: #0A2540;
+  background: #F7C325;
+  color: #1A1A1A;
   font-weight: 700;
   border: 0;
-  box-shadow: 0 8px 18px -8px rgba(212, 175, 55, 0.7);
+  box-shadow: 0 8px 18px -8px rgba(247, 195, 37, 0.7);
 }
 
 .dh-hero .btn-accent:hover {
-  background: #e6c55a;
-  color: #0A2540;
+  background: #D9A514;
+  color: #1A1A1A;
 }
 
 .dh-welcome-row {
@@ -593,7 +593,7 @@ html {
 
 .stat-card-primary {
   --dh-stat-from: var(--tblr-primary);
-  --dh-stat-to: color-mix(in srgb, var(--tblr-primary) 72%, #0A2540);
+  --dh-stat-to: color-mix(in srgb, var(--tblr-primary) 72%, #1A1A1A);
 }
 
 .stat-card-success {
