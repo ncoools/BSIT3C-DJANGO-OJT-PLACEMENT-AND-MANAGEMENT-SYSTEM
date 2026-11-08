@@ -7,8 +7,8 @@
   --tblr-primary-fg: #1A1A1A;
   --tblr-primary-rgb: 247, 195, 37;
   --tblr-accent: #F7C325;
-  --tblr-body-bg: #1A1A1A;
-  --tblr-body-bg-rgb: 26, 26, 26;
+  --tblr-body-bg: #111111;
+  --tblr-body-bg-rgb: 17, 17, 17;
   --tblr-body-color: #e9edf6;
   --tblr-body-color-rgb: 233, 237, 246;
   --tblr-muted: #9aa8c2;
@@ -43,6 +43,13 @@
   --dh-gold: #F7C325;
   --dh-gold-hover: #D9A514;
   --dh-gold-ink: #1A1A1A;
+
+  /* CMaT brand palette — shared sidebar / dashboard tokens */
+  --dh-bg: #111111;
+  --dh-card: #222222;
+  --dh-line: #333333;
+  --dh-ink: #FFFFFF;
+  --dh-muted: #C9C9C9;
 }
 
 :root:not([data-bs-theme-primary]),
@@ -63,8 +70,8 @@
 
 [data-bs-theme="dark"],
 body[data-bs-theme="dark"] [data-bs-theme="light"] {
-  --tblr-body-bg: #1A1A1A;
-  --tblr-body-bg-rgb: 26, 26, 26;
+  --tblr-body-bg: #111111;
+  --tblr-body-bg-rgb: 17, 17, 17;
   --tblr-body-color: #e9edf6;
   --tblr-border-color: rgba(255, 255, 255, 0.1);
   --tblr-bg-surface: #12294e;
@@ -273,10 +280,10 @@ html {
   height: 40px;
   flex-shrink: 0;
   border-radius: 50%;
-  color: #fff;
+  color: var(--dh-gold-ink);
   font-size: 1rem;
-  background: #5B7CE0;
-  box-shadow: 0 6px 16px -6px rgba(91, 124, 224, 0.8);
+  background: var(--dh-gold);
+  box-shadow: 0 6px 16px -6px rgba(247, 195, 37, 0.8);
 }
 
 .dh-sidebar .navbar-brand .lh-1 {
@@ -363,11 +370,11 @@ html {
 
 .dh-sidebar .navbar-toggler {
   border-radius: 0.5rem;
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--dh-sidebar-border);
 }
 
 .dh-sidebar .navbar-toggler:focus {
-  box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 0.2rem var(--dh-sidebar-hover-bg);
 }
 
 @media (min-width: 992px) {
@@ -391,7 +398,7 @@ html {
 
   .dh-sidebar .navbar-collapse {
     background: var(--dh-sidebar-bg);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid var(--dh-sidebar-border);
     padding-bottom: 1rem;
   }
 
@@ -407,13 +414,17 @@ html {
   margin: 1rem 0.75rem 0.75rem;
   padding: 0.75rem;
   border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  color: #ffffff;
+  background: var(--dh-card);
+  border: 1px solid var(--dh-line);
+  color: var(--dh-ink);
 }
 
 .dh-user-card:hover {
-  background: rgba(255, 255, 255, 0.09);
+  background: var(--dh-sidebar-hover-bg);
+}
+
+.dh-user-card .dh-user-meta {
+  min-width: 0;
 }
 
 .dh-avatar {
@@ -424,7 +435,7 @@ html {
   height: 2.25rem;
   flex-shrink: 0;
   border-radius: 0.65rem;
-  color: #fff;
+  color: var(--dh-gold-ink);
   font-weight: 700;
   font-size: 0.9rem;
   background: linear-gradient(135deg, #F7C325 0%, #D9A514 100%);
@@ -436,7 +447,7 @@ html {
   font-size: 0.85rem;
   font-weight: 600;
   line-height: 1.2;
-  color: #ffffff;
+  color: var(--dh-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -445,17 +456,17 @@ html {
 .dh-user-role {
   display: block;
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--dh-muted);
 }
 
 .dh-user-logout {
   margin-left: auto;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--dh-muted);
   font-size: 0.95rem;
 }
 
 .dh-user-logout:hover {
-  color: #ffffff;
+  color: var(--dh-ink);
 }
 
 .dh-stat-card {
@@ -715,8 +726,8 @@ html {
     min-height: 0;
     padding: 0.75rem 1rem;
     border-right: 0;
-    border-bottom: 1px solid #333333;
-    background: #1A1A1A;
+    border-bottom: 1px solid var(--dh-sidebar-border);
+    background: var(--dh-sidebar-bg);
   }
 
   .dh-sidebar .container-fluid {
