@@ -1,7 +1,7 @@
 <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark dh-sidebar">
   <div class="container-fluid">
     <div class="navbar-brand navbar-brand-autodark dh-brand">
-      <a href="." class="d-flex align-items-center gap-2 text-decoration-none">
+      <a href="{% url 'dashboard' %}" class="d-flex align-items-center gap-2 text-decoration-none">
         <span class="dh-brand-mark">
           <i class="fa-solid fa-shield-halved"></i>
         </span>
@@ -141,6 +141,19 @@
         </li>
         {% endif %}
       </ul>
+
+      <div class="dh-nav-sidebar-footer">
+        <div class="dh-user-card">
+          <span class="dh-avatar">{{ request.user.first_name|first|upper|default:"A" }}</span>
+          <div class="dh-user-meta">
+            <span class="dh-user-name">{{ request.user.get_full_name|default:"Admin" }}</span>
+            <span class="dh-user-role">OJT Coordinator</span>
+          </div>
+          <a class="dh-user-logout" href="{% url 'logout' %}" title="Sign out">
+            <i class="fa fa-sign-out-alt"></i>
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 </aside>

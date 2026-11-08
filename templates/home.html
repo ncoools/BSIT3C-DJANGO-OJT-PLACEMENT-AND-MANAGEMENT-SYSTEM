@@ -1,9 +1,11 @@
 {% extends "theme/base.html" %}
 
+{% block title %}Dashboard{% endblock %}
+
 {% block extra_css %}
 <style>
   .dh-admin {
-    --bg: #1A1A1A;
+    --bg: #111111;
     --card: #222222;
     --ink: #FFFFFF;
     --mute: #C9C9C9;
@@ -28,9 +30,9 @@
     backdrop-filter: blur(6px);
     z-index: 5;
   }
-  .dh-admin .top input {
-    flex: 1;
-    max-width: 380px;
+  .dh-admin .top .dh-search input {
+    width: 100%;
+    max-width: none;
     padding: 10px 14px;
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -39,7 +41,7 @@
     background: rgba(255, 255, 255, 0.06);
     color: var(--ink);
   }
-  .dh-admin .top input::placeholder { color: var(--mute); }
+  .dh-admin .top .dh-search input::placeholder { color: var(--mute); }
   .dh-admin .top .sp { flex: 1; }
   .dh-admin .bell { position: relative; font-size: 18px; }
   .dh-admin .bell s { position: absolute; top: -4px; right: -6px; background: var(--bad); color: #fff; font-size: 10px; border-radius: 99px; padding: 0 5px; text-decoration: none; }
@@ -103,16 +105,94 @@
   @media (max-width: 1000px) {
     .dh-admin .c4, .dh-admin .c5, .dh-admin .c6, .dh-admin .c7, .dh-admin .c8 { grid-column: span 12; }
   }
+
+  /* Search */
+  .dh-search-wrap {
+    position: relative;
+    flex: 1;
+    max-width: 420px;
+  }
+  .dh-search-results {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.8);
+    z-index: 60;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .dh-search-results[hidden] {
+    display: none;
+  }
+  .dh-search-list {
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+  }
+  .dh-search-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .dh-search-item.active {
+    background: var(--bg);
+  }
+  .dh-search-item-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: rgba(247, 195, 37, 0.12);
+    color: var(--pri);
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .dh-search-item-title {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .dh-search-item-sub {
+    display: block;
+    font-size: 11px;
+    color: var(--mute);
+  }
+  .dh-search-empty {
+    padding: 14px;
+    text-align: center;
+    color: var(--mute);
+    font-size: 13px;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="dh-admin">
   <header class="top">
-    <input type="search" placeholder="Search students, companies, placements" aria-label="Search">
+    <div class="dh-search-wrap">
+      <form class="dh-search" role="search" onsubmit="return false;">
+        <input type="search" id="global-search" placeholder="Search students, companies, placements" aria-label="Search" autocomplete="off">
+      </form>
+      <div class="dh-search-results" id="global-search-results" role="listbox" aria-hidden="true" hidden>
+        <ul class="dh-search-list" role="presentation"></ul>
+        <div class="dh-search-empty" hidden>No results found</div>
+      </div>
+    </div>
     <span class="sp"></span>
     <span class="bell" aria-label="Notifications">🔔<s>5</s></span>
-    <div class="me"><div class="av">AD</div><div>Admin<small>OJT Coordinator</small></div></div>
+    <div class="me">
+      <div class="av">{{ request.user.first_name|first|upper|default:"A" }}</div>
+      <div>{{ request.user.get_full_name|default:"Admin" }}<small>OJT Coordinator</small></div>
+    </div>
   </header>
 
   <div class="wrap">
@@ -123,8 +203,8 @@
       </div>
       <div class="btns">
         <button class="btn" type="button">Generate report</button>
-        <button class="btn" type="button">Add company</button>
-        <button class="btn p" type="button">+ New placement</button>
+        <a class="btn" href="{% url 'companies:create' %}">Add company</a>
+        <a class="btn p" href="{% url 'placements:create' %}">+ New placement</a>
       </div>
     </div>
 
@@ -275,13 +355,162 @@
       <div class="card c4">
         <h2>Quick actions</h2>
         <div class="qa">
-          <button class="btn" type="button">+ Student</button>
-          <button class="btn" type="button">+ Company</button>
-          <button class="btn" type="button">+ Supervisor</button>
-          <button class="btn" type="button">+ Placement</button>
+          <a class="btn" href="{% url 'students:create' %}">+ Student</a>
+          <a class="btn" href="{% url 'companies:create' %}">+ Company</a>
+          <a class="btn" href="{% url 'supervisors:create' %}">+ Supervisor</a>
+          <a class="btn p" href="{% url 'placements:create' %}">+ Placement</a>
         </div>
       </div>
     </section>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script id="dh-search-data" type="application/json">
+[
+  {% for placement in recent_placements %}
+  {
+    "type": "placement",
+    "id": {{ placement.pk }},
+    "title": "{{ placement.student.first_name }} {{ placement.student.last_name }} at {{ placement.company.company_name }}"|safe,
+    "subtitle": "{{ placement.company.company_name }} · {{ placement.start_date }}",
+    "url": "{% url 'placements:list' %}"
+  }{% if not forloop.last %},
+  {% endif %}
+  {% endfor %}
+]
+</script>
+<script>
+(function () {
+  var input = document.getElementById('global-search');
+  var resultsBox = document.getElementById('global-search-results');
+  var resultsList = resultsBox ? resultsBox.querySelector('.dh-search-list') : null;
+  var emptyBox = resultsBox ? resultsBox.querySelector('.dh-search-empty') : null;
+  var debounceTimer = null;
+  var results = [];
+  var activeIndex = -1;
+
+  var MIN_CHARS = 1;
+  var MAX_RESULTS = 5;
+
+  function getSearchData() {
+    var el = document.getElementById('dh-search-data');
+    if (!el) { return []; }
+    try {
+      var parsed = JSON.parse(el.textContent);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) { return []; }
+  }
+
+  function runSearch() {
+    clearTimeout(debounceTimer);
+    var q = (input && input.value ? input.value : '').trim().toLowerCase();
+    var data = getSearchData();
+    var hits = [];
+    if (q.length >= MIN_CHARS) {
+      for (var i = 0; i < data.length; i++) {
+        var item = data[i];
+        var hay = ((item.title || '') + ' ' + (item.subtitle || '')).toLowerCase();
+        if (hay.indexOf(q) !== -1) { hits.push(item); }
+        if (hits.length >= MAX_RESULTS) { break; }
+      }
+    }
+    results = hits;
+    renderResults(q);
+  }
+
+  function renderResults(q) {
+    if (!resultsBox) { return; }
+    if (!q) {
+      resultsBox.hidden = true;
+      if (emptyBox) { emptyBox.hidden = true; emptyBox.textContent = 'No results found'; }
+      return;
+    }
+    if (results.length === 0) {
+      resultsBox.hidden = false;
+      if (resultsList) { resultsList.innerHTML = ''; }
+      if (emptyBox) { emptyBox.hidden = false; emptyBox.textContent = 'No results found'; }
+      activeIndex = -1;
+      return;
+    }
+    if (emptyBox) { emptyBox.hidden = true; }
+    var html = '';
+    for (var i = 0; i < results.length; i++) {
+      var r = results[i];
+      html += '<li class="dh-search-item" role="option" data-idx="' + i + '">' +
+        '<span class="dh-search-item-icon"><i class="fa ' + (r.icon || 'fa-circle-info') + '"></i></span>' +
+        '<span class="dh-search-item-text"><span class="dh-search-item-title">' + r.title + '</span><span class="dh-search-item-sub">' + (r.subtitle || '') + '</span></span>' +
+        '</li>';
+    }
+    if (resultsList) { resultsList.innerHTML = html; }
+    resultsBox.hidden = false;
+    var items = resultsList ? resultsList.querySelectorAll('.dh-search-item') : [];
+    for (var j = 0; j < items.length; j++) {
+      if (j === activeIndex) { items[j].classList.add('active'); items[j].setAttribute('aria-selected', 'true'); }
+      else { items[j].classList.remove('active'); items[j].setAttribute('aria-selected', 'false'); }
+    }
+  }
+
+  function openResult(item) {
+    if (item && item.url) { window.location.href = item.url; }
+  }
+
+  function setActive(index) {
+    if (!results.length) { activeIndex = -1; return; }
+    var next = index;
+    if (next < 0) { next = results.length - 1; }
+    if (next >= results.length) { next = 0; }
+    activeIndex = next;
+    var items = resultsList ? resultsList.querySelectorAll('.dh-search-item') : [];
+    for (var i = 0; i < items.length; i++) {
+      if (i === activeIndex) { items[i].classList.add('active'); items[i].setAttribute('aria-selected', 'true'); }
+      else { items[i].classList.remove('active'); items[i].setAttribute('aria-selected', 'false'); }
+    }
+  }
+
+  function closeResults() {
+    if (resultsBox) { resultsBox.hidden = true; }
+    activeIndex = -1;
+  }
+
+  function onKeyDown(e) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (results.length) { setActive(activeIndex + 1); }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (results.length) { setActive(activeIndex - 1); }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      var target = results.length ? results[activeIndex >= 0 ? activeIndex : 0] : null;
+      if (target) { openResult(target); }
+    } else if (e.key === 'Escape') {
+      closeResults();
+    }
+  }
+
+  function onInput() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(function () { runSearch(); }, 250);
+  }
+
+  if (input) {
+    input.addEventListener('input', onInput);
+    input.addEventListener('keydown', function (e) { onKeyDown(e); });
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === '/' && document.activeElement !== input) {
+      e.preventDefault();
+      if (input) { input.focus(); }
+    }
+  });
+
+  var form = document.querySelector('.dh-admin .top .dh-search');
+  if (form) { form.addEventListener('submit', function (e) { e.preventDefault(); }); }
+
+  runSearch();
+})();
+</script>
 {% endblock %}
