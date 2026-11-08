@@ -7,18 +7,18 @@
   --tblr-primary-fg: #1A1A1A;
   --tblr-primary-rgb: 247, 195, 37;
   --tblr-accent: #F7C325;
-  --tblr-body-bg: #111111;
-  --tblr-body-bg-rgb: 17, 17, 17;
-  --tblr-body-color: #e9edf6;
-  --tblr-body-color-rgb: 233, 237, 246;
-  --tblr-muted: #9aa8c2;
-  --tblr-muted-rgb: 154, 168, 194;
-  --tblr-border-color: rgba(255, 255, 255, 0.1);
-  --tblr-border-color-translucent: rgba(255, 255, 255, 0.08);
-  --tblr-bg-surface: #12294e;
-  --tblr-bg-surface-secondary: #0f2342;
-  --tblr-bg-surface-tertiary: #0b1c38;
-  --tblr-bg-forms: #0f2342;
+  --tblr-body-bg: #f4f6fb;
+  --tblr-body-bg-rgb: 244, 246, 251;
+  --tblr-body-color: #1a2233;
+  --tblr-body-color-rgb: 26, 34, 51;
+  --tblr-muted: #5b6b85;
+  --tblr-muted-rgb: 91, 107, 133;
+  --tblr-border-color: rgba(15, 23, 42, 0.1);
+  --tblr-border-color-translucent: rgba(15, 23, 42, 0.06);
+  --tblr-bg-surface: #ffffff;
+  --tblr-bg-surface-secondary: #f1f5f9;
+  --tblr-bg-surface-tertiary: #e8edf5;
+  --tblr-bg-forms: #ffffff;
   --tblr-border-radius: calc(10px * var(--tblr-border-radius-scale, 1));
   --tblr-border-radius-sm: calc(8px * var(--tblr-border-radius-scale, 1));
   --tblr-border-radius-lg: calc(14px * var(--tblr-border-radius-scale, 1));
@@ -35,11 +35,11 @@
   --tblr-link-hover-color: var(--tblr-primary-active);
 
   /* CMaT brand colors — sidebar */
-  --dh-sidebar-bg: #1A1A1A;
-  --dh-sidebar-border: #333333;
-  --dh-sidebar-hover-bg: #222222;
-  --dh-sidebar-text: #FFFFFF;
-  --dh-sidebar-muted: #C9C9C9;
+  --dh-sidebar-bg: #f7f8fb;
+  --dh-sidebar-border: rgba(15, 23, 42, 0.12);
+  --dh-sidebar-hover-bg: #eef2f8;
+  --dh-sidebar-text: #1a2233;
+  --dh-sidebar-muted: #5b6b85;
   --dh-gold: #F7C325;
   --dh-gold-hover: #D9A514;
   --dh-gold-ink: #1A1A1A;
@@ -68,8 +68,7 @@
   --tblr-primary-rgb: 247, 195, 37;
 }
 
-[data-bs-theme="dark"],
-body[data-bs-theme="dark"] [data-bs-theme="light"] {
+[data-bs-theme="dark"] {
   --tblr-body-bg: #111111;
   --tblr-body-bg-rgb: 17, 17, 17;
   --tblr-body-color: #e9edf6;
@@ -77,6 +76,11 @@ body[data-bs-theme="dark"] [data-bs-theme="light"] {
   --tblr-bg-surface: #12294e;
   --tblr-bg-surface-secondary: #0f2342;
   --tblr-bg-surface-tertiary: #0b1c38;
+  --dh-sidebar-bg: #1A1A1A;
+  --dh-sidebar-border: #333333;
+  --dh-sidebar-hover-bg: #222222;
+  --dh-sidebar-text: #FFFFFF;
+  --dh-sidebar-muted: #C9C9C9;
   --tblr-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 28px -14px rgba(0, 0, 0, 0.65);
 }
 
@@ -585,6 +589,18 @@ html {
 
 .dh-welcome-row {
   margin-top: 1rem;
+}
+
+[data-bs-theme="light"] .dh-admin {
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --ink: #1a2233;
+  --mute: #5b6b85;
+  --line: rgba(15, 23, 42, 0.1);
+}
+
+[data-bs-theme="light"] .dh-admin .top {
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .dh-footer {
