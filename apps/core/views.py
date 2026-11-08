@@ -13,7 +13,7 @@ from django.views.decorators.http import require_http_methods
 
 from apps.companies.models import Company
 from apps.departments.models import Department
-from apps.placements.models import Placement, PlacementRequirement
+from apps.placements.models import Placement, PlacementRequirement, PlacementEvaluation
 from apps.students.models import Student
 
 User = get_user_model()
@@ -221,6 +221,62 @@ def home(request):
     }
 
     return render(request, 'home.html', context)
+
+
+@login_required(login_url='login')
+def student_dashboard(request):
+    student = Student.objects.filter(email__iexact=(request.user.email or '')).first()
+    if not student:
+        return redirect('dashboard')
+
+    placements = list(
+        student.placements
+        .select_related('company', 'supervisor')
+        .order_by('-start_date')
+    )
+
+    required_hours = sum(
+        placement.required_hours
+        for placement in placements
+        if placement.status != Placement.Status.CANCELLED
+    )
+    completed_hours = sum(
+        placement.completed_hours
+        for placement in placements
+        if placement.status != Placement.Status.CANCELLED
+    )
+
+    pending_requirements = list(
+        PlacementRequirement.objects.filter(
+            placement__student=student,
+            status=PlacementRequirement.Status.PENDING,
+        )
+        .select_related('placement__student')
+        .order_by('date_submitted', 'placement__student__last_name', 'placement__student__first_name')
+    )
+
+    evaluations = list(
+        PlacementEvaluation.objects.filter(placement__student=student)
+        .select_related('placement__company', 'evaluator')
+        .order_by('-evaluation_date')
+    )
+
+    context = {
+        'student': student,
+        'student_name': f'{student.first_name} {student.last_name}'.strip(),
+        'student_number': student.student_number,
+        'placements': placements,
+        'active_placements': [p for p in placements if p.status == Placement.Status.IN_PROGRESS],
+        'completed_placements': [p for p in placements if p.status == Placement.Status.COMPLETED],
+        'cancelled_placements': [p for p in placements if p.status == Placement.Status.CANCELLED],
+        'pending_requirements': pending_requirements,
+        'evaluations': evaluations,
+        'required_hours': required_hours,
+        'completed_hours': completed_hours,
+        'hours_pct': round((completed_hours / required_hours * 100), 1) if required_hours else 0,
+    }
+
+    return render(request, 'student_dashboard.html', context)
 
 
 @require_http_methods(['GET', 'POST'])
