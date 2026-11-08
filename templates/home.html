@@ -172,6 +172,106 @@
     color: var(--mute);
     font-size: 13px;
   }
+
+  /* Notifications */
+  .dh-notif {
+    position: relative;
+  }
+  .dh-bell {
+    background: none;
+    border: 0;
+    padding: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+  }
+  .dh-bell:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .dh-notif-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    width: 360px;
+    max-width: calc(100vw - 40px);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
+    z-index: 70;
+    overflow: hidden;
+  }
+  .dh-notif-panel[hidden] {
+    display: none;
+  }
+  .dh-notif-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .dh-notif-clear {
+    background: none;
+    border: 0;
+    color: var(--pri);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+  }
+  .dh-notif-list {
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+    max-height: 340px;
+    overflow-y: auto;
+  }
+  .dh-notif-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px;
+    border-radius: 10px;
+  }
+  .dh-notif-item:hover {
+    background: var(--bg);
+  }
+  .dh-notif-item .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 7px;
+    flex: none;
+  }
+  .dh-notif-item a {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--pri);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .dh-notif-title {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .dh-notif-desc {
+    display: block;
+    font-size: 12px;
+    color: var(--mute);
+    margin-top: 2px;
+  }
 </style>
 {% endblock %}
 
@@ -188,7 +288,19 @@
       </div>
     </div>
     <span class="sp"></span>
-    <span class="bell" aria-label="Notifications">🔔<s>5</s></span>
+    <div class="dh-notif">
+      <button class="dh-bell" type="button" id="dh-notif-button" aria-label="Notifications" aria-expanded="false" aria-haspopup="true">
+        <span class="bell">🔔<s id="dh-notif-badge">5</s></span>
+      </button>
+      <div class="dh-notif-panel" id="dh-notif-panel" hidden>
+        <div class="dh-notif-head">
+          <span>Notifications</span>
+          <button type="button" class="dh-notif-clear" id="dh-notif-clear">Mark all read</button>
+        </div>
+        <ul class="dh-notif-list" id="dh-notif-list"></ul>
+        <div class="dh-notif-empty" id="dh-notif-empty" hidden>No new notifications</div>
+      </div>
+    </div>
     <div class="me">
       <div class="av">{{ request.user.first_name|first|upper|default:"A" }}</div>
       <div>{{ request.user.get_full_name|default:"Admin" }}<small>OJT Coordinator</small></div>
@@ -511,6 +623,115 @@
   if (form) { form.addEventListener('submit', function (e) { e.preventDefault(); }); }
 
   runSearch();
+})();
+</script>
+
+<script id="dh-notif-data" type="application/json">
+[
+  {% for requirement in pending_requirements_list %}
+  {
+    "id": "req-{{ requirement.requirement_id }}",
+    "title": "{{ requirement.placement.student.first_name }} {{ requirement.placement.student.last_name }} — {{ requirement.requirement_name }}",
+    "desc": "{% if requirement.date_submitted %}{{ requirement.date_submitted|date:'M j, Y' }}{% endif %}",
+    "link": "{% url 'placements:requirement_list' requirement.placement.pk %}",
+    "tone": "warn"
+  }{% if not forloop.last %},{% endif %}
+  {% endfor %}
+  {
+    "id": "unplaced",
+    "title": "{{ unplaced_students }} student(s) without a placement",
+    "desc": "OJT starts Nov 15",
+    "link": "{% url 'students:list' %}",
+    "tone": "bad"
+  }
+]
+</script>
+<script>
+(function () {
+  var button = document.getElementById('dh-notif-button');
+  var panel = document.getElementById('dh-notif-panel');
+  var list = document.getElementById('dh-notif-list');
+  var empty = document.getElementById('dh-notif-empty');
+  var badge = document.getElementById('dh-notif-badge');
+  var clearBtn = document.getElementById('dh-notif-clear');
+
+  function getNotifs() {
+    var el = document.getElementById('dh-notif-data');
+    if (!el) { return []; }
+    try { var parsed = JSON.parse(el.textContent); return Array.isArray(parsed) ? parsed : []; } catch (e) { return []; }
+  }
+
+  function renderNotifs() {
+    if (!panel) { return; }
+    var data = getNotifs();
+    if (!data || !data.length) {
+      panel.hidden = true;
+      if (empty) { empty.hidden = false; }
+      if (list) { while (list.firstChild) { list.removeChild(list.firstChild); } }
+      return;
+    }
+    if (list) { while (list.firstChild) { list.removeChild(list.firstChild); } }
+    data.forEach(function (n) {
+      var li = document.createElement('li');
+      li.className = 'dh-notif-item';
+      var dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = n.tone === 'bad' ? 'var(--bad)' : (n.tone === 'warn' ? 'var(--warn)' : 'var(--info)');
+      var box = document.createElement('div');
+      var t = document.createElement('span');
+      t.className = 'dh-notif-title';
+      t.textContent = n.title || '';
+      var d = document.createElement('span');
+      d.className = 'dh-notif-desc';
+      d.textContent = n.desc || '';
+      box.appendChild(t);
+      box.appendChild(d);
+      var a = document.createElement('a');
+      a.href = n.link || '#';
+      a.textContent = 'Open';
+      li.appendChild(dot);
+      li.appendChild(box);
+      li.appendChild(a);
+      if (list) { list.appendChild(li); }
+    });
+    if (empty) { empty.hidden = true; }
+    if (badge) { badge.textContent = String(data.length); }
+  }
+
+  function markAllRead() {
+    if (badge) { badge.textContent = '0'; }
+  }
+
+  if (button && panel) {
+    button.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var opening = panel.hidden;
+      panel.hidden = !opening;
+      button.setAttribute('aria-expanded', opening ? 'true' : 'false');
+      if (opening) { renderNotifs(); }
+    });
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        markAllRead();
+      });
+    }
+  }
+
+  document.addEventListener('click', function (e) {
+    if (panel && !panel.hidden) {
+      if (button && !button.contains(e.target)) { panel.hidden = true; if (button) { button.setAttribute('aria-expanded', 'false'); } }
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      if (panel && !panel.hidden) { panel.hidden = true; if (button) { button.setAttribute('aria-expanded', 'false'); } }
+    }
+  });
+
+  renderNotifs();
 })();
 </script>
 {% endblock %}
