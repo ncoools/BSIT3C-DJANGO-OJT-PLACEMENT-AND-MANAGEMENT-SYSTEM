@@ -1,0 +1,158 @@
+{% extends "theme/base.html" %}
+
+{% block title %}Supervisor Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  .dh-supervisor {
+    --bg: #111111;
+    --card: #222222;
+    --ink: #FFFFFF;
+    --mute: #C9C9C9;
+    --line: #333333;
+    --pri: #F7C325;
+    --pri-ink: #1A1A1A;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --bad: #dc2626;
+    --info: #2563eb;
+    background: var(--bg);
+  }
+  .dh-supervisor .wrap { padding: 26px 28px 40px; }
+  .dh-supervisor .head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
+  .dh-supervisor h1 { font-size: 26px; color: var(--ink); }
+  .dh-supervisor .sub { color: var(--mute); font-size: 14px; margin-top: 2px; }
+  .dh-supervisor .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .dh-supervisor .btn { font: inherit; font-size: 14px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); color: var(--ink); cursor: pointer; }
+  .dh-supervisor .btn.p { background: var(--pri); border-color: var(--pri); color: var(--pri-ink); }
+  .dh-supervisor .grid { display: grid; gap: 16px; }
+  .dh-supervisor .stats { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: 16px; }
+  .dh-supervisor .card { background: var(--card); border-radius: 14px; padding: 18px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); border: 1px solid var(--line); }
+  .dh-supervisor .stat .l { font-size: 13px; color: var(--mute); }
+  .dh-supervisor .stat .v { font-size: 30px; font-weight: 600; margin: 4px 0; color: var(--ink); }
+  .dh-supervisor .stat .d { font-size: 12px; color: var(--mute); }
+  .dh-supervisor .stat .d b { color: var(--ok); font-weight: 600; }
+  .dh-supervisor .stat .d b.w { color: var(--warn); }
+  .dh-supervisor .stat .ic { float: right; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: rgba(247, 195, 37, 0.14); }
+  .dh-supervisor .row { display: grid; grid-template-columns: repeat(12, 1fr); margin-bottom: 16px; }
+  .dh-supervisor .c7 { grid-column: span 7; }
+  .dh-supervisor .c5 { grid-column: span 5; }
+  .dh-supervisor h2 { font-size: 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; color: var(--ink); }
+  .dh-supervisor h2 a { font-size: 13px; color: var(--pri); font-weight: 500; text-decoration: none; }
+  .dh-supervisor .tw { overflow-x: auto; }
+  .dh-supervisor table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .dh-supervisor th { text-align: left; font-weight: 500; color: var(--mute); font-size: 13px; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .dh-supervisor td { padding: 11px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; color: var(--ink); }
+  .dh-supervisor tr:last-child td { border: 0; }
+  .dh-supervisor .pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; font-weight: 500; }
+  .dh-supervisor .pill.ok { background: rgba(22, 163, 74, 0.18); color: #4ade80; }
+  .dh-supervisor .pill.wa { background: rgba(217, 119, 6, 0.18); color: #fbbf24; }
+  .dh-supervisor .pill.in { background: rgba(37, 99, 235, 0.18); color: #93c5fd; }
+  .dh-supervisor .pill.ba { background: rgba(220, 38, 38, 0.18); color: #f87171; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dh-supervisor">
+  <div class="wrap">
+    <div class="head">
+      <div>
+        <h1>Supervisor Dashboard</h1>
+        <p>{{ supervisor_name }}{% if supervisor.company %} · {{ supervisor.company.company_name }}{% endif %}</p>
+      </div>
+      <div class="btns">
+        <a class="btn p" href="{% url 'placements:create' %}">+ New placement</a>
+      </div>
+    </div>
+
+    <section class="grid stats">
+      <div class="card stat">
+        <span class="ic">💼</span>
+        <div class="l">Active placements</div>
+        <div class="v">{{ active_placements|length }}</div>
+        <div class="d">Currently on OJT</div>
+      </div>
+      <div class="card stat">
+        <span class="ic">✅</span>
+        <div class="l">Completed</div>
+        <div class="v">{{ completed_placements|length }}</div>
+        <div class="d">Finished OJT</div>
+      </div>
+      <div class="card stat">
+        <span class="ic">☰</span>
+        <div class="l">Evaluations</div>
+        <div class="v">{{ evaluations|length }}</div>
+        <div class="d">Conducted</div>
+      </div>
+    </section>
+
+    <section class="grid row">
+      <div class="card c7">
+        <h2>My Placements</h2>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Company</th>
+                <th>Period</th>
+                <th>Hours</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for placement in placements %}
+              <tr>
+                <td>{{ placement.student }}</td>
+                <td>{{ placement.company.company_name }}</td>
+                <td>{{ placement.start_date }} → {{ placement.end_date }}</td>
+                <td>{{ placement.completed_hours }}/{{ placement.required_hours }}</td>
+                <td>
+                  <span class="pill {% if placement.status == 'in_progress' %}in{% elif placement.status == 'completed' %}ok{% elif placement.status == 'cancelled' %}ba{% else %}wa{% endif %}">
+                    {% if placement.status == 'in_progress' %}In progress{% elif placement.status == 'completed' %}Completed{% elif placement.status == 'cancelled' %}Cancelled{% else %}Planned{% endif %}
+                  </span>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5">No placements yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card c5">
+        <h2>Evaluations</h2>
+        <div class="tw">
+          <table>
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Company</th>
+                <th>Date</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for evaluation in evaluations %}
+              <tr>
+                <td>{{ evaluation.placement.student }}</td>
+                <td>{{ evaluation.placement.company.company_name }}</td>
+                <td>{{ evaluation.evaluation_date }}</td>
+                <td>{{ evaluation.score }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4">No evaluations yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
