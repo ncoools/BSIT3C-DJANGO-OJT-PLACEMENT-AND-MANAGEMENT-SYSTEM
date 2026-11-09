@@ -44,6 +44,7 @@
           </a>
         </li>
 
+        {% if is_student %}
         <li class="nav-item mb-1">
           <a
             class="nav-link {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}"
@@ -56,6 +57,7 @@
             <span class="nav-link-title">Student Dashboard</span>
           </a>
         </li>
+        {% endif %}
 
         <li class="nav-item mb-1">
           <a

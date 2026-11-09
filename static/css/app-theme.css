@@ -35,11 +35,11 @@
   --tblr-link-hover-color: var(--tblr-primary-active);
 
   /* CMaT brand colors — sidebar */
-  --dh-sidebar-bg: #f7f8fb;
-  --dh-sidebar-border: rgba(15, 23, 42, 0.12);
-  --dh-sidebar-hover-bg: #eef2f8;
-  --dh-sidebar-text: #1a2233;
-  --dh-sidebar-muted: #5b6b85;
+  --dh-sidebar-bg: #1A1A1A;
+  --dh-sidebar-border: #333333;
+  --dh-sidebar-hover-bg: #222222;
+  --dh-sidebar-text: #FFFFFF;
+  --dh-sidebar-muted: #C9C9C9;
   --dh-gold: #F7C325;
   --dh-gold-hover: #D9A514;
   --dh-gold-ink: #1A1A1A;

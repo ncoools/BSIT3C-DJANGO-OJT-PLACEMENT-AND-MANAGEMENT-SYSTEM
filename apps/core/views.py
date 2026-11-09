@@ -13,7 +13,7 @@ from django.views.decorators.http import require_http_methods
 
 from apps.companies.models import Company
 from apps.departments.models import Department
-from apps.placements.models import Placement, PlacementRequirement, PlacementEvaluation
+from apps.placements.models import Placement, PlacementRequirement, PlacementEvaluation, Attendance
 from apps.students.models import Student
 
 User = get_user_model()
@@ -261,6 +261,12 @@ def student_dashboard(request):
         .order_by('-evaluation_date')
     )
 
+    attendance_records = list(
+        Attendance.objects.filter(placement__student=student)
+        .select_related('placement__company')
+        .order_by('-attendance_date', '-placement__start_date')
+    )
+
     context = {
         'student': student,
         'student_name': f'{student.first_name} {student.last_name}'.strip(),
@@ -271,6 +277,7 @@ def student_dashboard(request):
         'cancelled_placements': [p for p in placements if p.status == Placement.Status.CANCELLED],
         'pending_requirements': pending_requirements,
         'evaluations': evaluations,
+        'attendance_records': attendance_records,
         'required_hours': required_hours,
         'completed_hours': completed_hours,
         'hours_pct': round((completed_hours / required_hours * 100), 1) if required_hours else 0,
