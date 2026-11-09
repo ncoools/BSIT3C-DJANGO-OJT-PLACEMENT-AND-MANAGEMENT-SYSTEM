@@ -22,3 +22,15 @@ def student_context(request):
 
             is_student = Student.objects.filter(email__iexact=email).exists()
     return {'is_student': is_student}
+
+
+def supervisor_context(request):
+    """Expose whether the current user has a supervisor profile."""
+    is_supervisor = False
+    if request.user.is_authenticated:
+        email = getattr(request.user, 'email', '') or ''
+        if email:
+            from apps.supervisors.models import Supervisor
+
+            is_supervisor = Supervisor.objects.filter(email__iexact=email).exists()
+    return {'is_supervisor': is_supervisor}

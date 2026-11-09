@@ -123,6 +123,39 @@ rel="stylesheet"
                         </div>
                     </div>
 
+                    <!-- Student Number -->
+                    <div class="mb-3">
+                        <label class="form-label">Student Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-id-card text-secondary"></i>
+                            </span>
+                            <input
+                            type="text"
+                            name="student_number"
+                            class="form-control {% if errors.student_number %}is-invalid{% endif %}"
+                            placeholder="Auto-generated if blank"
+                            value="{{ form_data.student_number|default:'' }}">
+                            {% if errors.student_number %}
+                            <div class="invalid-feedback">{{ errors.student_number }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Department -->
+                    <div class="mb-3">
+                        <label class="form-label required">Department</label>
+                        <select name="department_name" class="form-select {% if errors.department_name %}is-invalid{% endif %}">
+                            <option value="">Select a department</option>
+                            {% for department in departments %}
+                            <option value="{{ department.department_name }}" {% if form_data.department_name == department.department_name %}selected{% endif %}>{{ department.department_name }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.department_name %}
+                        <div class="invalid-feedback">{{ errors.department_name }}</div>
+                        {% endif %}
+                    </div>
+
                     <!-- Password -->
                     <div class="mb-3">
                         <label class="form-label required">Password</label>

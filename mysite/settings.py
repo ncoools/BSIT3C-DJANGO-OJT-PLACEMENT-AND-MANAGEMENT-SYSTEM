@@ -79,6 +79,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.context_processors.placement_context',
                 'apps.context_processors.student_context',
+                'apps.context_processors.supervisor_context',
             ],
         },
     },

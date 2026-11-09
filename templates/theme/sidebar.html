@@ -59,6 +59,21 @@
         </li>
         {% endif %}
 
+        {% if is_supervisor %}
+        <li class="nav-item mb-1">
+          <a
+            class="nav-link {% if request.resolver_match.url_name == 'supervisor_dashboard' %}active{% endif %}"
+            href="{% url 'supervisor_dashboard' %}"
+            aria-current="{% if request.resolver_match.url_name == 'supervisor_dashboard' %}page{% else %}false{% endif %}"
+          >
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <i class="fas fa-user-tie"></i>
+            </span>
+            <span class="nav-link-title">Supervisor Dashboard</span>
+          </a>
+        </li>
+        {% endif %}
+
         <li class="nav-item mb-1">
           <a
             class="nav-link {% if request.resolver_match.app_name == 'students' %}active{% endif %}"

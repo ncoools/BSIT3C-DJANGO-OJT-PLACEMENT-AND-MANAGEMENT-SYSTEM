@@ -1,3 +1,4 @@
+import random
 from datetime import timedelta
 
 from django.contrib import messages
@@ -9,11 +10,13 @@ from django.core.validators import validate_email
 from django.db.models import Count
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 
 from apps.companies.models import Company
 from apps.departments.models import Department
 from apps.placements.models import Placement, PlacementRequirement, PlacementEvaluation, Attendance
+from apps.supervisors.models import Supervisor
 from apps.students.models import Student
 
 User = get_user_model()
@@ -55,6 +58,14 @@ def _set_lock_state(request):
     request.session['failed_attempts'] = MAX_FAILED_ATTEMPTS
     request.session['lock_time'] = lock_until.isoformat()
     return int(LOCK_DURATION.total_seconds())
+
+
+def _generate_student_number(department_name):
+    base = slugify(department_name).upper().replace('-', '').replace(' ', '')[:8] or 'OJT'
+    while True:
+        candidate = f"{base}-{random.randint(100, 9999)}"
+        if not Student.objects.filter(student_number=candidate).exists():
+            return candidate
 
 
 def _validate_registration_data(data):
@@ -102,6 +113,18 @@ def _validate_registration_data(data):
     if password != confirm_password:
         errors['confirm_password'] = 'Passwords do not match.'
 
+    student_number = data.get('student_number', '').strip()
+    department_name = data.get('department_name', '').strip()
+
+    if student_number and Student.objects.filter(student_number=student_number).exists():
+        errors['student_number'] = 'Student number already taken.'
+
+    department = None
+    if department_name:
+        department = Department.objects.filter(department_name__iexact=department_name).first()
+    if not department_name or department is None:
+        errors['department_name'] = 'Select a valid department.'
+
     return errors
 
 
@@ -146,6 +169,12 @@ def logout_view(request):
 
 @login_required(login_url='login')
 def home(request):
+    email = getattr(request.user, 'email', '') or ''
+    if email and Student.objects.filter(email__iexact=email).exists():
+        return redirect('student_dashboard')
+    if email and Supervisor.objects.filter(email__iexact=email).exists():
+        return redirect('supervisor_dashboard')
+
     total_students = Student.objects.count()
     partner_companies = Company.objects.count()
     total_placements = Placement.objects.count()
@@ -286,13 +315,43 @@ def student_dashboard(request):
     return render(request, 'student_dashboard.html', context)
 
 
+@login_required(login_url='login')
+def supervisor_dashboard(request):
+    supervisor = Supervisor.objects.filter(email__iexact=(request.user.email or '')).first()
+    if not supervisor:
+        return redirect('dashboard')
+
+    placements = list(
+        supervisor.placements
+        .select_related('student', 'company')
+        .order_by('-start_date')
+    )
+
+    evaluations = list(
+        PlacementEvaluation.objects.filter(evaluator=supervisor)
+        .select_related('placement__student', 'placement__company')
+        .order_by('-evaluation_date')
+    )
+
+    context = {
+        'supervisor': supervisor,
+        'supervisor_name': f'{supervisor.first_name} {supervisor.last_name}'.strip(),
+        'placements': placements,
+        'evaluations': evaluations,
+        'active_placements': [p for p in placements if p.status == Placement.Status.IN_PROGRESS],
+        'completed_placements': [p for p in placements if p.status == Placement.Status.COMPLETED],
+    }
+
+    return render(request, 'supervisor_dashboard.html', context)
+
+
 @require_http_methods(['GET', 'POST'])
 def register_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
 
     if request.method == 'GET':
-        return render(request, 'auth/register.html')
+        return render(request, 'auth/register.html', {'departments': Department.objects.all()})
 
     form_data = {
         'username': request.POST.get('username', ''),
@@ -305,7 +364,7 @@ def register_view(request):
 
     errors = _validate_registration_data(form_data)
     if errors:
-        return render(request, 'auth/register.html', {'errors': errors, 'form_data': form_data})
+        return render(request, 'auth/register.html', {'errors': errors, 'form_data': form_data, 'departments': Department.objects.all()})
 
     user = User.objects.create_user(
         username=form_data['username'].strip(),
@@ -314,5 +373,21 @@ def register_view(request):
         email=form_data['email'].strip(),
         password=form_data['password'],
     )
+
+    student_number = form_data.get('student_number', '').strip()
+    department_name = form_data.get('department_name', '').strip()
+    if not errors and department_name:
+        department = Department.objects.filter(department_name__iexact=department_name).first()
+        if department:
+            if not student_number:
+                student_number = _generate_student_number(department.department_name)
+            Student.objects.create(
+                student_number=student_number,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                email=user.email,
+                department=department,
+            )
+
     login(request, user)
     return redirect('dashboard')
