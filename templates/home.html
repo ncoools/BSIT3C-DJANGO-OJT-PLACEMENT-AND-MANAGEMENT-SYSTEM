@@ -379,7 +379,7 @@
         </div>
       </div>
       <div class="card c7">
-        <h2>Students per department <a href="#">View all</a></h2>
+        <h2>Students per department <a href="{% url 'students:list' %}">View all</a></h2>
         {% for dept in department_stats %}
         <div class="bar">
           <span>{{ dept.department_name }}</span>
@@ -396,35 +396,35 @@
         <div class="alert">
           <span class="dot" style="background:var(--bad)"></span>
           <div>{{ pending_requirements }} requirements waiting for review<small>Oldest submitted 6 days ago</small></div>
-          <a href="#">Review</a>
+          <a href="{% if pending_requirements_list %}{% url 'placements:requirement_list' pending_requirements_list.0.placement.pk %}{% else %}{% url 'placements:list' %}{% endif %}">Review</a>
         </div>
         <div class="alert">
           <span class="dot" style="background:var(--bad)"></span>
           <div>{{ unplaced_students }} students without a placement<small>OJT starts Nov 15</small></div>
-          <a href="#">View</a>
+          <a href="{% url 'students:list' %}">View</a>
         </div>
         <div class="alert">
           <span class="dot" style="background:var(--warn)"></span>
           <div>3 company MOAs expire within 30 days<small>Northgate IT, Cebu Foods, BrightWorks</small></div>
-          <a href="#">Renew</a>
+          <a href="{% url 'companies:list' %}">Renew</a>
         </div>
         <div class="alert">
           <span class="dot" style="background:var(--warn)"></span>
           <div>9 evaluations due this week<small>Supervisors have been notified</small></div>
-          <a href="#">View</a>
+          <a href="{% url 'supervisors:list' %}">View</a>
         </div>
         <div class="alert">
           <span class="dot" style="background:var(--info)"></span>
           <div>6 placements end in 7 days<small>Confirm final hours</small></div>
-          <a href="#">View</a>
+          <a href="{% url 'placements:list' %}">View</a>
         </div>
       </div>
       <div class="card c7">
-        <h2>Recent placements <a href="#">View all</a></h2>
+        <h2>Recent placements <a href="{% url 'placements:list' %}">View all</a></h2>
         <div class="tw">
           <table>
             <thead>
-              <tr><th>Student</th><th>Company</th><th>Hours</th><th>Status</th><th>Start</th></tr>
+              <tr><th>Student</th><th>Company</th><th>Hours</th><th>Status</th><th>Start</th><th>Actions</th></tr>
             </thead>
             <tbody>
             {% for placement in recent_placements %}
@@ -434,6 +434,15 @@
                 <td><div class="hrs"><div><span style="width:{{ placement.completed_hours }}%"></span></div>{{ placement.completed_hours }}/{{ placement.required_hours }}</div></td>
                 <td><span class="pill {% if placement.status == 'in_progress' %}in{% elif placement.status == 'completed' %}ok{% elif placement.status == 'planned' %}wa{% else %}ba{% endif %}">{{ placement.get_status_display }}</span></td>
                 <td>{{ placement.start_date }}</td>
+                <td><div class="d-flex gap-2">
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:requirement_list' placement.pk %}">Requirements</a>
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:evaluation_list' placement.pk %}">Evaluations</a>
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:report_list' placement.pk %}">Reports</a>
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:update' placement.pk %}">Edit</a>
+                  <form method="post" action="{% url 'placements:delete' placement.pk %}" onsubmit="return confirm('Delete this placement?');">
+                    {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                  </form>
+                </div></td>
               </tr>
               {% endfor %}
             </tbody>
@@ -457,7 +466,7 @@
                 <td>{{ requirement.requirement_name }}</td>
                 <td>{{ requirement.date_submitted }}</td>
                 <td><span class="pill wa">For review</span></td>
-                <td><button class="btn" type="button">Open</button></td>
+                <td><a class="btn" href="{% url 'placements:requirement_update' requirement.placement.pk requirement.requirement_id %}">Open</a></td>
               </tr>
               {% endfor %}
             </tbody>
