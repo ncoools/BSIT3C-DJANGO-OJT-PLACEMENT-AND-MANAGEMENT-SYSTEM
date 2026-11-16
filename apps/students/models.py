@@ -18,9 +18,9 @@ class Student(models.Model):
     age = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
-        validators=[MinValueValidator(15), MaxValueValidator(30)],
+        validators=[MinValueValidator(19), MaxValueValidator(30)],
     )
-    sex = models.CharField(max_length=10, blank=True, choices=[('M', 'Male'), ('F', 'Female'), ('O', 'Other')])
+    sex = models.CharField(max_length=10, blank=True, choices=[('M', 'Male'), ('F', 'Female')])
 
     class Meta:
         ordering = ['last_name', 'first_name']

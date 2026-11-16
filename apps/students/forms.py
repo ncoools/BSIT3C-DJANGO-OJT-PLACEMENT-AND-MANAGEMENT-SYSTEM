@@ -24,7 +24,7 @@ class StudentForm(forms.ModelForm):
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'contact_no': forms.TextInput(attrs={'class': 'form-control'}),
-            'age': forms.NumberInput(attrs={'class': 'form-control', 'min': 15, 'max': 30}),
+            'age': forms.NumberInput(attrs={'class': 'form-control', 'min': 19, 'max': 30}),
             'sex': forms.Select(attrs={'class': 'form-select'}),
             'department': forms.Select(attrs={'class': 'form-select'}),
         }
