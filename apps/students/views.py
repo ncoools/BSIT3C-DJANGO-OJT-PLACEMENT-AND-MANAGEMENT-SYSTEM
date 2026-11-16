@@ -52,6 +52,9 @@ def student_update(request, pk):
 @require_POST
 def student_delete(request, pk):
     student = get_object_or_404(Student, pk=pk)
+    if student.placements.exists():
+        messages.error(request, 'This student cannot be deleted while assigned to an OJT placement.')
+        return redirect('students:list')
     student.delete()
     messages.success(request, 'Student deleted successfully.')
     return redirect('students:list')

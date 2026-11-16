@@ -51,6 +51,9 @@ def company_update(request, pk):
 @require_POST
 def company_delete(request, pk):
     company = get_object_or_404(Company, pk=pk)
+    if company.placements.exists():
+        messages.error(request, 'This company cannot be deleted while it has OJT placements.')
+        return redirect('companies:list')
     company.delete()
     messages.success(request, 'Company deleted successfully.')
     return redirect('companies:list')
