@@ -18,7 +18,7 @@
   <div class="card">
     <div class="table-responsive">
       <table class="table table-vcenter card-table">
-        <thead><tr><th>Student no.</th><th>Name</th><th>Email</th><th>Department</th><th>Year</th><th>File</th><th class="w-1">Actions</th></tr></thead>
+        <thead><tr><th>Student no.</th><th>Name</th><th>Email</th><th>Department</th><th>Year</th><th class="w-1">Actions</th></tr></thead>
         <tbody>
           {% for student in students %}
           <tr>
@@ -27,7 +27,6 @@
             <td>{{ student.email|default:"—" }}</td>
             <td>{{ student.department.department_name }}</td>
             <td>{{ student.year_level|default:"—" }}</td>
-            <td>{% if student.document %}<a href="{{ student.document.url }}" target="_blank" rel="noopener">View</a>{% else %}—{% endif %}</td>
             <td><div class="d-flex gap-2">
               <a class="btn btn-sm btn-outline-primary" href="{% url 'students:update' student.pk %}">Edit</a>
               <form method="post" action="{% url 'students:delete' student.pk %}" onsubmit="return confirm('Delete this student?');">
@@ -35,7 +34,7 @@
               </form>
             </div></td>
           </tr>
-          {% empty %}<tr><td colspan="7" class="text-center text-muted p-4">No students found.</td></tr>{% endfor %}
+          {% empty %}<tr><td colspan="6" class="text-center text-muted p-4">No students found.</td></tr>{% endfor %}
         </tbody>
       </table>
     </div>

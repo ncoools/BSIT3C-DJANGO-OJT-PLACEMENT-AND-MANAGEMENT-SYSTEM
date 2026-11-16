@@ -16,7 +16,6 @@ class StudentForm(forms.ModelForm):
             'contact_no',
             'year_level',
             'department',
-            'document',
         ]
         widgets = {
             'student_number': forms.TextInput(attrs={'class': 'form-control'}),
@@ -26,7 +25,6 @@ class StudentForm(forms.ModelForm):
             'contact_no': forms.TextInput(attrs={'class': 'form-control'}),
             'year_level': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
             'department': forms.Select(attrs={'class': 'form-select'}),
-            'document': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
