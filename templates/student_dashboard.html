@@ -83,12 +83,6 @@
         <div class="d">Finished OJT</div>
       </div>
       <div class="card stat">
-        <span class="ic">⏳</span>
-        <div class="l">Pending requirements</div>
-        <div class="v">{{ pending_requirements|length }}</div>
-        <div class="d">Awaiting submission</div>
-      </div>
-      <div class="card stat">
         <span class="ic">☰</span>
         <div class="l">Hours completed</div>
         <div class="v">{{ completed_hours }}</div>
@@ -125,7 +119,6 @@
                 </td>
                 <td>
                   <div class="d-flex gap-2">
-                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:requirement_list' placement.pk %}">Requirements</a>
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:evaluation_list' placement.pk %}">Evaluations</a>
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:report_list' placement.pk %}">Reports</a>
                     <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:update' placement.pk %}">Edit</a>

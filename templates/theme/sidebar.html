@@ -129,21 +129,6 @@
         {% if first_placement_id %}
         <li class="nav-item mb-1">
           <a
-            class="nav-link {% if request.resolver_match.url_name == 'requirement_list' %}active{% endif %}"
-            href="{% url 'placements:requirement_list' first_placement_id %}"
-            aria-current="{% if request.resolver_match.url_name == 'requirement_list' %}page{% else %}false{% endif %}"
-          >
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <i class="fa fa-list"></i>
-            </span>
-            <span class="nav-link-title">Requirements</span>
-          </a>
-        </li>
-        {% endif %}
-
-        {% if first_placement_id %}
-        <li class="nav-item mb-1">
-          <a
             class="nav-link {% if request.resolver_match.url_name == 'evaluation_list' %}active{% endif %}"
             href="{% url 'placements:evaluation_list' first_placement_id %}"
             aria-current="{% if request.resolver_match.url_name == 'evaluation_list' %}page{% else %}false{% endif %}"

@@ -346,12 +346,6 @@
         <div class="d"><b class="w">3</b> MOAs expiring soon</div>
       </div>
       <div class="card stat">
-        <span class="ic">☰</span>
-        <div class="l">Pending requirements</div>
-        <div class="v">{{ pending_requirements }}</div>
-        <div class="d">Awaiting your review</div>
-      </div>
-      <div class="card stat">
         <span class="ic">✅</span>
         <div class="l">Completed OJT</div>
         <div class="v">{{ completed_placements }}</div>
@@ -395,11 +389,6 @@
         <h2>Needs attention</h2>
         <div class="alert">
           <span class="dot" style="background:var(--bad)"></span>
-          <div>{{ pending_requirements }} requirements waiting for review<small>Oldest submitted 6 days ago</small></div>
-          <a href="{% if pending_requirements_list %}{% url 'placements:requirement_list' pending_requirements_list.0.placement.pk %}{% else %}{% url 'placements:list' %}{% endif %}">Review</a>
-        </div>
-        <div class="alert">
-          <span class="dot" style="background:var(--bad)"></span>
           <div>{{ unplaced_students }} students without a placement<small>OJT starts Nov 15</small></div>
           <a href="{% url 'students:list' %}">View</a>
         </div>
@@ -435,7 +424,6 @@
                 <td><span class="pill {% if placement.status == 'in_progress' %}in{% elif placement.status == 'completed' %}ok{% elif placement.status == 'planned' %}wa{% else %}ba{% endif %}">{{ placement.get_status_display }}</span></td>
                 <td>{{ placement.start_date }}</td>
                 <td><div class="d-flex gap-2">
-                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:requirement_list' placement.pk %}">Requirements</a>
                   <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:evaluation_list' placement.pk %}">Evaluations</a>
                   <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:report_list' placement.pk %}">Reports</a>
                   <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:update' placement.pk %}">Edit</a>
@@ -452,27 +440,6 @@
     </section>
 
     <section class="grid row">
-      <div class="card c8">
-        <h2>Requirements awaiting review <a href="#">View all</a></h2>
-        <div class="tw">
-          <table>
-            <thead>
-              <tr><th>Student</th><th>Document</th><th>Submitted</th><th>Status</th><th></th></tr>
-            </thead>
-            <tbody>
-            {% for requirement in pending_requirements_list %}
-              <tr>
-                <td>{{ requirement.placement.student.first_name }} {{ requirement.placement.student.last_name }}</td>
-                <td>{{ requirement.requirement_name }}</td>
-                <td>{{ requirement.date_submitted }}</td>
-                <td><span class="pill wa">For review</span></td>
-                <td><a class="btn" href="{% url 'placements:requirement_update' requirement.placement.pk requirement.requirement_id %}">Open</a></td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
       <div class="card c4">
         <h2>Quick actions</h2>
         <div class="qa">
@@ -637,15 +604,6 @@
 
 <script id="dh-notif-data" type="application/json">
 [
-  {% for requirement in pending_requirements_list %}
-  {
-    "id": "req-{{ requirement.requirement_id }}",
-    "title": "{{ requirement.placement.student.first_name }} {{ requirement.placement.student.last_name }} — {{ requirement.requirement_name }}",
-    "desc": "{% if requirement.date_submitted %}{{ requirement.date_submitted|date:'M j, Y' }}{% endif %}",
-    "link": "{% url 'placements:requirement_list' requirement.placement.pk %}",
-    "tone": "warn"
-  }{% if not forloop.last %},{% endif %}
-  {% endfor %}
   {
     "id": "unplaced",
     "title": "{{ unplaced_students }} student(s) without a placement",
