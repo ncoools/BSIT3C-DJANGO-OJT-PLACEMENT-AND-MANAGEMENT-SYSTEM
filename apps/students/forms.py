@@ -14,7 +14,6 @@ class StudentForm(forms.ModelForm):
             'last_name',
             'email',
             'contact_no',
-            'year_level',
             'department',
         ]
         widgets = {
@@ -23,7 +22,6 @@ class StudentForm(forms.ModelForm):
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'contact_no': forms.TextInput(attrs={'class': 'form-control'}),
-            'year_level': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 5}),
             'department': forms.Select(attrs={'class': 'form-select'}),
         }
 
