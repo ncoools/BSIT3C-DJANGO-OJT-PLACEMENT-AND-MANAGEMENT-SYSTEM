@@ -1,5 +1,7 @@
 from django import forms
 
+from apps.departments.models import Department
+
 from .models import Student
 
 
@@ -26,3 +28,9 @@ class StudentForm(forms.ModelForm):
             'department': forms.Select(attrs={'class': 'form-select'}),
             'document': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['department'].queryset = Department.objects.filter(
+            department_name__iexact='INFORMATION TECHNOLOGY'
+        )

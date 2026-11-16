@@ -122,7 +122,7 @@ def _validate_registration_data(data):
     department = None
     if department_name:
         department = Department.objects.filter(department_name__iexact=department_name).first()
-    if not department_name or department is None:
+    if not department_name or department is None or department.department_name.upper() != 'INFORMATION TECHNOLOGY':
         errors['department_name'] = 'Select a valid department.'
 
     return errors
@@ -185,6 +185,7 @@ def home(request):
 
     departments = list(
         Department.objects
+        .filter(department_name__iexact='INFORMATION TECHNOLOGY')
         .annotate(student_count=Count('students'))
         .order_by('-student_count', 'department_name')
     )
@@ -351,7 +352,7 @@ def register_view(request):
         return redirect('dashboard')
 
     if request.method == 'GET':
-        return render(request, 'auth/register.html', {'departments': Department.objects.all()})
+        return render(request, 'auth/register.html', {'departments': Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY')})
 
     form_data = {
         'username': request.POST.get('username', ''),
@@ -364,7 +365,7 @@ def register_view(request):
 
     errors = _validate_registration_data(form_data)
     if errors:
-        return render(request, 'auth/register.html', {'errors': errors, 'form_data': form_data, 'departments': Department.objects.all()})
+        return render(request, 'auth/register.html', {'errors': errors, 'form_data': form_data, 'departments': Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY')})
 
     user = User.objects.create_user(
         username=form_data['username'].strip(),

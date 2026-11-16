@@ -7,3 +7,6 @@ from .models import Department
 class DepartmentAdmin(admin.ModelAdmin):
     list_display = ('department_name', 'department_head')
     search_fields = ('department_name', 'department_head')
+
+    def get_queryset(self, request):
+        return Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY')

@@ -9,7 +9,7 @@ from .models import Department
 
 @login_required(login_url='login')
 def department_list(request):
-    departments = Department.objects.all()
+    departments = Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY')
     return render(request, 'departments/department_list.html', {'departments': departments})
 
 
