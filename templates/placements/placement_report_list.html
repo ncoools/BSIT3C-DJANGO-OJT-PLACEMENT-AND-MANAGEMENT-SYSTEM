@@ -1,14 +1,32 @@
 {% extends "theme/base.html" %}
+{% load static %}
 {% block content %}
 <div class="container-xl">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'placements:list' %}">Placements</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Reports</li>
+    </ol>
+  </nav>
+
   <div class="page-header d-print-none mb-3">
     <div class="row align-items-center">
-      <div class="col"><h2 class="page-title">Placement reports</h2></div>
-      <div class="col-auto"><a class="btn btn-primary" href="{% url 'placements:report_create' placement.pk %}">Add report</a> <a class="btn btn-outline-secondary" href="{% url 'placements:list' %}"><i class="fa fa-arrow-left"></i> Back</a></div>
+      <div class="col">
+        <span class="page-pretitle">OJT Placement</span>
+        <h2 class="page-title">Placement reports</h2>
+        <p class="text-secondary mb-0">Review submitted reports for {{ placement.company.company_name }}.</p>
+      </div>
+      <div class="col-auto">
+        <a class="btn btn-primary" href="{% url 'placements:report_create' placement.pk %}">Add report</a>{" "}
+        <a class="btn btn-outline-secondary" href="{% url 'placements:list' %}"><i class="fa fa-arrow-left"></i> Back</a>
+      </div>
     </div>
   </div>
+
   {% for message in messages %}<div class="alert alert-success">{{ message }}</div>{% endfor %}
-  <form method="get" class="row g-2 mb-3">
+
+  <form method="get" class="row g-2 mb-4">
     <div class="col-sm-6">
       <input class="form-control" type="search" name="q" value="{{ query }}" placeholder="Search reports">
     </div>
@@ -23,60 +41,106 @@
     <div class="col-auto"><button class="btn btn-outline-primary" type="submit">Filter</button></div>
     {% if query or selected_status %}<div class="col-auto"><a class="btn btn-outline-secondary" href="{% url 'placements:report_list' placement.pk %}">Clear</a></div>{% endif %}
   </form>
-  <div class="row">
-    <div class="col">
-      <div class="card mb-3">
-        <h2>Chosen student</h2>
-        <div class="tw">
-          <table>
-            <tbody>
-              <tr>
-                <th>Student</th>
-                <td>{{ placement.student.first_name }} {{ placement.student.last_name }} ({{ placement.student.student_number }})</td>
-              </tr>
-              <tr>
-                <th>Company</th>
-                <td>{{ placement.company.company_name }}</td>
-              </tr>
-              <tr>
-                <th>Age</th>
-                <td>{{ placement.student.age|default:"—" }}</td>
-              </tr>
-              <tr>
-                <th>Sex</th>
-                <td>{{ placement.student.sex|default:"—" }}</td>
-              </tr>
-              <tr>
-                <th>Status</th>
-                <td>{{ placement.get_status_display }}</td>
-              </tr>
-            </tbody>
-          </table>
+
+  <div class="card mb-4">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <h5 class="card-title mb-0">Report history</h5>
+      <span class="badge text-bg-secondary">{{ reports|length }} record{{ reports|length|pluralize }}</span>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Report</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Content</th>
+              <th class="w-1">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for report in reports %}
+            <tr>
+              <td>{{ report.get_report_type_display }}</td>
+              <td>{{ report.report_date|date:"M j, Y" }}</td>
+              <td><span class="dh-badge-status">{{ report.get_status_display }}</span></td>
+              <td>{{ report.content|default_if_none:"—" }}</td>
+              <td>
+                <div class="d-flex gap-2">
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:report_update' placement.pk report.pk %}">Edit</a>
+                  <form method="post" action="{% url 'placements:report_delete' placement.pk report.pk %}" onsubmit="return confirm('Delete this report?');">
+                    {% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-secondary p-5">No reports have been recorded yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header"><h5 class="card-title mb-0">Student info</h5></div>
+        <div class="card-body">
+          <div class="dh-meta-row">
+            <span class="dh-meta-label">Full name</span>
+            <span class="dh-meta-value">{{ placement.student.first_name }} {{ placement.student.last_name }}</span>
+          </div>
+          <div class="dh-meta-row">
+            <span class="dh-meta-label">Student ID</span>
+            <span class="dh-meta-value">{{ placement.student.student_number }}</span>
+          </div>
+          <div class="dh-meta-row">
+            <span class="dh-meta-label">Program</span>
+            <span class="dh-meta-value">{{ placement.student.department.department_name }}</span>
+          </div>
+          <div class="dh-meta-row">
+            <span class="dh-meta-label">Company</span>
+            <span class="dh-meta-value">{{ placement.company.company_name }}</span>
+          </div>
         </div>
       </div>
     </div>
-    <div class="col">
-      <div class="card">
-        <div class="table-responsive">
-          <table class="table table-vcenter card-table">
-            <thead><tr><th>Report</th><th>Date</th><th>Content</th><th>Status</th><th class="w-1">Actions</th></tr></thead>
-            <tbody>
-              {% for report in reports %}
-              <tr>
-                <td>{{ report.get_report_type_display }}</td>
-                <td>{{ report.report_date|date:"M j, Y" }}</td>
-                <td>{{ report.content|default:"—" }}</td>
-                <td>{{ report.get_status_display }}</td>
-                <td><div class="d-flex gap-2">
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:report_update' placement.pk report.pk %}">Edit</a>
-                  <form method="post" action="{% url 'placements:report_delete' placement.pk report.pk %}" onsubmit="return confirm('Delete this report?');">
-                    {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
-                  </form>
-                </div></td>
-              </tr>
-              {% empty %}<tr><td colspan="5" class="text-center text-muted p-4">No reports found.</td></tr>{% endfor %}
-            </tbody>
-          </table>
+    <div class="col-lg-8">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">Latest report</h5>
+          <span class="badge text-bg-secondary">{{ placement.company.company_name }}</span>
+        </div>
+        <div class="card-body">
+          {% with latest_report=reports|first %}
+          {% if latest_report %}
+          <div class="text-center mb-4">
+            <img src="{% static 'images/report.png' %}" alt="Report" class="img-fluid rounded" style="max-height: 9rem; width: auto;">
+          </div>
+          <div class="dh-meta-row">
+            <span class="dh-meta-label">Type</span>
+            <span class="dh-meta-value">{{ latest_report.get_report_type_display }}</span>
+          </div>
+          <div class="dh-meta-row">
+            <span class="dh-meta-label">Date</span>
+            <span class="dh-meta-value">{{ latest_report.report_date|date:"M j, Y" }}</span>
+          </div>
+          <div class="dh-inset-panel mt-3">
+            <div class="dh-meta-label mb-2">Content</div>
+            <p class="mb-0">{{ latest_report.content|default_if_none:"—" }}</p>
+          </div>
+          {% else %}
+          <div class="text-center py-5">
+            <i class="fas fa-file-alt text-secondary mb-2" style="font-size: 2rem;"></i>
+            <p class="text-secondary mb-0">No report has been recorded yet.</p>
+          </div>
+          {% endif %}
+          {% endwith %}
         </div>
       </div>
     </div>

@@ -657,6 +657,21 @@ html {
   color: var(--dh-gold);
 }
 
+.dh-badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 100rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dh-ink);
+  background: var(--dh-surface-inset);
+  border: 1px solid var(--dh-line);
+}
+
 .dh-progress {
   height: 8px;
   background: rgba(255, 255, 255, 0.06);
