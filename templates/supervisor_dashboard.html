@@ -144,6 +144,7 @@
                 <th>Company</th>
                 <th>Date</th>
                 <th>Score</th>
+                <th class="w-1">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -153,10 +154,18 @@
                 <td>{{ evaluation.placement.company.company_name }}</td>
                 <td>{{ evaluation.evaluation_date }}</td>
                 <td>{{ evaluation.score }}</td>
+                <td>
+                  <div class="d-flex gap-2">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:evaluation_update' evaluation.placement.pk evaluation.pk %}">Edit</a>
+                    <form method="post" action="{% url 'placements:evaluation_delete' evaluation.placement.pk evaluation.pk %}" onsubmit="return confirm('Delete this evaluation?');">
+                      {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                    </form>
+                  </div>
+                </td>
               </tr>
               {% empty %}
               <tr>
-                <td colspan="4">No evaluations yet.</td>
+                <td colspan="5">No evaluations yet.</td>
               </tr>
               {% endfor %}
             </tbody>
