@@ -118,9 +118,6 @@
         <div class="card-body">
           {% with latest_report=reports|first %}
           {% if latest_report %}
-          <div class="text-center mb-4">
-            <img src="{% static 'images/report.png' %}" alt="Report" class="img-fluid rounded" style="max-height: 9rem; width: auto;">
-          </div>
           <div class="dh-meta-row">
             <span class="dh-meta-label">Type</span>
             <span class="dh-meta-value">{{ latest_report.get_report_type_display }}</span>
