@@ -71,6 +71,16 @@ def placement_update(request, pk):
 @require_POST
 def placement_delete(request, pk):
     placement = get_object_or_404(Placement, pk=pk)
+    related_records_exist = (
+        placement.evaluations.exists()
+        or placement.requirements.exists()
+        or placement.reports.exists()
+        or placement.schedules.exists()
+        or placement.attendance_records.exists()
+    )
+    if related_records_exist:
+        messages.error(request, 'This placement cannot be deleted while related records exist.')
+        return redirect('placements:list')
     placement.delete()
     messages.success(request, 'Placement deleted successfully.')
     return redirect('placements:list')
