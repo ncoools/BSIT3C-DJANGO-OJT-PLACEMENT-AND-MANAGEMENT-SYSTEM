@@ -32,6 +32,7 @@
           <span class="dh-nav-section">MENU</span>
         </li>
 
+        {% if is_admin %}
         <li class="nav-item mb-1">
           <a
             class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
@@ -44,6 +45,7 @@
             <span class="nav-link-title">Dashboard</span>
           </a>
         </li>
+        {% endif %}
 
         {% if is_student %}
         <li class="nav-item mb-1">
@@ -75,6 +77,7 @@
         </li>
         {% endif %}
 
+        {% if is_admin %}
         <li class="nav-item mb-1">
           <a
             class="nav-link {% if request.resolver_match.app_name == 'students' %}active{% endif %}"
@@ -126,6 +129,7 @@
             <span class="nav-link-title">OJT Placements</span>
           </a>
         </li>
+        {% endif %}
 
       </ul>
 
@@ -134,7 +138,7 @@
           <span class="dh-avatar">{{ request.user.first_name|first|upper|default:"A" }}</span>
           <div class="dh-user-meta">
             <span class="dh-user-name">{{ request.user.get_full_name|default:"Admin" }}</span>
-            <span class="dh-user-role">OJT Coordinator</span>
+            <span class="dh-user-role">{{ user_role|title }}</span>
           </div>
           <a class="dh-user-logout" href="{% url 'logout' %}" title="Sign out">
             <i class="fa fa-sign-out-alt"></i>
