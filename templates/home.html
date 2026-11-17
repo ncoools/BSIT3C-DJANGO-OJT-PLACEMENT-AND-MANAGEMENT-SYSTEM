@@ -354,7 +354,7 @@
     </section>
 
     <section class="grid row">
-      <div class="card c5">
+      <div class="card c6">
         <h2>Placements by status</h2>
         <div class="donut">
           <svg viewBox="0 0 42 42" role="img" aria-label="Placements by status">
@@ -370,42 +370,6 @@
             <li><i style="background:{{ seg.color }}"></i>{{ seg.label }}<b>{{ seg.value }}</b></li>
             {% endfor %}
           </ul>
-        </div>
-      </div>
-      <div class="card c7">
-        <h2>Students per department <a href="{% url 'students:list' %}">View all</a></h2>
-        {% for dept in department_stats %}
-        <div class="bar">
-          <span>{{ dept.department_name }}</span>
-          <div><span style="width:{{ dept.student_width }}%"></span></div>
-          <em>{{ dept.student_count }}</em>
-        </div>
-        {% endfor %}
-      </div>
-    </section>
-
-    <section class="grid row">
-      <div class="card c6">
-        <h2>Needs attention</h2>
-        <div class="alert">
-          <span class="dot" style="background:var(--bad)"></span>
-          <div>{{ unplaced_students }} students without a placement<small>OJT starts Nov 15</small></div>
-          <a href="{% url 'students:list' %}">View</a>
-        </div>
-        <div class="alert">
-          <span class="dot" style="background:var(--warn)"></span>
-          <div>3 company MOAs expire within 30 days<small>Northgate IT, Cebu Foods, BrightWorks</small></div>
-          <a href="{% url 'companies:list' %}">Renew</a>
-        </div>
-        <div class="alert">
-          <span class="dot" style="background:var(--warn)"></span>
-          <div>9 evaluations due this week<small>Supervisors have been notified</small></div>
-          <a href="{% url 'supervisors:list' %}">View</a>
-        </div>
-        <div class="alert">
-          <span class="dot" style="background:var(--info)"></span>
-          <div>6 placements end in 7 days<small>Confirm final hours</small></div>
-          <a href="{% url 'placements:list' %}">View</a>
         </div>
       </div>
       <div class="card c6">
