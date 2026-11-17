@@ -18,8 +18,7 @@
         <p class="text-secondary mb-0">Evaluate the chosen student's overall performance at {{ placement.company.company_name }}.</p>
       </div>
       <div class="col-auto">
-        <a class="btn btn-primary" href="{% url 'placements:evaluation_create' placement.pk %}">Add evaluation</a>{" "}
-        <a class="btn btn-outline-secondary" href="{% url 'placements:list' %}"><i class="fa fa-arrow-left"></i> Back</a>
+        <a class="btn btn-primary" href="{% url 'placements:evaluation_create' placement.pk %}">Add evaluation</a> <a class="btn btn-outline-secondary" href="{% url 'placements:list' %}"><i class="fa fa-arrow-left"></i> Back</a>
       </div>
     </div>
   </div>

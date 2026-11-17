@@ -708,9 +708,8 @@ html {
   text-align: right;
 }
 
-.btn-danger,
-.btn-outline-danger {
-  --tblr-btn-color: #E5484D;
+.btn-danger {
+  --tblr-btn-color: #fff;
   --tblr-btn-bg: #E5484D;
   --tblr-btn-border-color: #E5484D;
   --tblr-btn-hover-color: #fff;
@@ -719,9 +718,23 @@ html {
   --tblr-btn-active-color: #fff;
   --tblr-btn-active-bg: #B32B2F;
   --tblr-btn-active-border-color: #B32B2F;
-  --tblr-btn-disabled-color: #E5484D;
-  --tblr-btn-disabled-bg: rgba(229, 72, 77, 0.12);
+  --tblr-btn-disabled-color: rgba(255, 255, 255, 0.5);
+  --tblr-btn-disabled-bg: rgba(229, 72, 77, 0.35);
   --tblr-btn-disabled-border-color: rgba(229, 72, 77, 0.35);
+}
+
+.btn-outline-danger {
+  --tblr-btn-color: #FF6B6B;
+  --tblr-btn-border-color: rgba(255, 107, 107, 0.5);
+  --tblr-btn-hover-color: #FF6B6B;
+  --tblr-btn-hover-bg: rgba(255, 107, 107, 0.1);
+  --tblr-btn-hover-border-color: rgba(255, 107, 107, 0.5);
+  --tblr-btn-active-color: #FF6B6B;
+  --tblr-btn-active-bg: rgba(255, 107, 107, 0.15);
+  --tblr-btn-active-border-color: #FF6B6B;
+  --tblr-btn-disabled-color: rgba(255, 107, 107, 0.35);
+  --tblr-btn-disabled-bg: rgba(255, 107, 107, 0.1);
+  --tblr-btn-disabled-border-color: rgba(255, 107, 107, 0.35);
 }
 
 .stat-card-primary {
