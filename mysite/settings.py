@@ -80,6 +80,7 @@ TEMPLATES = [
                 'apps.context_processors.placement_context',
                 'apps.context_processors.student_context',
                 'apps.context_processors.supervisor_context',
+                'apps.context_processors.user_role_context',
             ],
         },
     },
