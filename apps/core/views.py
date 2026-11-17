@@ -114,16 +114,9 @@ def _validate_registration_data(data):
         errors['confirm_password'] = 'Passwords do not match.'
 
     student_number = data.get('student_number', '').strip()
-    department_name = data.get('department_name', '').strip()
 
     if student_number and Student.objects.filter(student_number=student_number).exists():
         errors['student_number'] = 'Student number already taken.'
-
-    department = None
-    if department_name:
-        department = Department.objects.filter(department_name__iexact=department_name).first()
-    if not department_name or department is None or department.department_name.upper() != 'INFORMATION TECHNOLOGY':
-        errors['department_name'] = 'Select a valid department.'
 
     return errors
 
@@ -352,7 +345,7 @@ def register_view(request):
         return redirect('dashboard')
 
     if request.method == 'GET':
-        return render(request, 'auth/register.html', {'departments': Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY')})
+        return render(request, 'auth/register.html')
 
     form_data = {
         'username': request.POST.get('username', ''),
@@ -361,11 +354,12 @@ def register_view(request):
         'email': request.POST.get('email', ''),
         'password': request.POST.get('password', ''),
         'confirm_password': request.POST.get('confirm_password', ''),
+        'student_number': request.POST.get('student_number', ''),
     }
 
     errors = _validate_registration_data(form_data)
     if errors:
-        return render(request, 'auth/register.html', {'errors': errors, 'form_data': form_data, 'departments': Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY')})
+        return render(request, 'auth/register.html', {'errors': errors, 'form_data': form_data})
 
     user = User.objects.create_user(
         username=form_data['username'].strip(),
@@ -376,19 +370,17 @@ def register_view(request):
     )
 
     student_number = form_data.get('student_number', '').strip()
-    department_name = form_data.get('department_name', '').strip()
-    if not errors and department_name:
-        department = Department.objects.filter(department_name__iexact=department_name).first()
-        if department:
-            if not student_number:
-                student_number = _generate_student_number(department.department_name)
-            Student.objects.create(
-                student_number=student_number,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                email=user.email,
-                department=department,
-            )
+    department = Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY').first()
+    if department:
+        if not student_number:
+            student_number = _generate_student_number(department.department_name)
+        Student.objects.create(
+            student_number=student_number,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            email=user.email,
+            department=department,
+        )
 
     login(request, user)
     return redirect('dashboard')
