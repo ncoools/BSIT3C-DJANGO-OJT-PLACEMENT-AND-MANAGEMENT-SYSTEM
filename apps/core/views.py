@@ -118,6 +118,10 @@ def _validate_registration_data(data):
     if student_number and Student.objects.filter(student_number=student_number).exists():
         errors['student_number'] = 'Student number already taken.'
 
+    role = data.get('role', 'student')
+    if role not in ('student', 'supervisor', 'admin'):
+        errors['role'] = 'Select a valid role.'
+
     return errors
 
 
@@ -361,12 +365,14 @@ def register_view(request):
         'password': request.POST.get('password', ''),
         'confirm_password': request.POST.get('confirm_password', ''),
         'student_number': request.POST.get('student_number', ''),
+        'role': request.POST.get('role', 'student'),
     }
 
     errors = _validate_registration_data(form_data)
     if errors:
         return render(request, 'auth/register.html', {'errors': errors, 'form_data': form_data})
 
+    role = form_data.get('role', 'student')
     user = User.objects.create_user(
         username=form_data['username'].strip(),
         first_name=form_data['first_name'].strip(),
@@ -375,17 +381,29 @@ def register_view(request):
         password=form_data['password'],
     )
 
-    student_number = form_data.get('student_number', '').strip()
-    department = Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY').first()
-    if department:
-        if not student_number:
-            student_number = _generate_student_number(department.department_name)
-        Student.objects.create(
-            student_number=student_number,
+    if role == 'admin':
+        user.is_staff = True
+        user.is_superuser = True
+        user.save()
+    elif role == 'student':
+        student_number = form_data.get('student_number', '').strip()
+        department = Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY').first()
+        if department:
+            if not student_number:
+                student_number = _generate_student_number(department.department_name)
+            Student.objects.create(
+                student_number=student_number,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                email=user.email,
+                department=department,
+            )
+    elif role == 'supervisor':
+        Supervisor.objects.create(
+            supervisor_type=Supervisor.Type.SCHOOL,
             first_name=user.first_name,
             last_name=user.last_name,
             email=user.email,
-            department=department,
         )
 
     login(request, user)
