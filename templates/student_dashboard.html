@@ -5,13 +5,13 @@
 {% block extra_css %}
 <style>
   .dh-student {
-    --bg: #111111;
-    --card: #222222;
-    --ink: #FFFFFF;
-    --mute: #C9C9C9;
-    --line: #333333;
-    --pri: #F7C325;
-    --pri-ink: #1A1A1A;
+    --bg: #111312;
+    --card: #1B1F1C;
+    --ink: #F4F5EF;
+    --mute: #A7B0A7;
+    --line: #333B34;
+    --pri: #F1D900;
+    --pri-ink: #141414;
     --ok: #4ade80;
     --warn: #fbbf24;
     --bad: #dc2626;
@@ -63,9 +63,6 @@
       <div>
         <h1>Student Dashboard</h1>
         <p>{{ student.student_number }} · {{ student_name }}</p>
-      </div>
-      <div class="btns">
-        <a class="btn p" href="{% url 'placements:create' %}">+ New placement</a>
       </div>
     </div>
 
@@ -121,10 +118,6 @@
                   <div class="d-flex gap-2">
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:evaluation_list' placement.pk %}">Evaluations</a>
                     <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:report_list' placement.pk %}">Reports</a>
-                    <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:update' placement.pk %}">Edit</a>
-                    <form method="post" action="{% url 'placements:delete' placement.pk %}" onsubmit="return confirm('Delete this placement?');">
-                      {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
-                    </form>
                   </div>
                 </td>
               </tr>

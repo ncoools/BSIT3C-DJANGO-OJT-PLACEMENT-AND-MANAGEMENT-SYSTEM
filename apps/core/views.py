@@ -248,7 +248,10 @@ def home(request):
 
 @login_required(login_url='login')
 def student_dashboard(request):
-    student = Student.objects.filter(email__iexact=(request.user.email or '')).first()
+    email = getattr(request.user, 'email', '') or ''
+    if Supervisor.objects.filter(email__iexact=email).exists():
+        return redirect('supervisor_dashboard')
+    student = Student.objects.filter(email__iexact=email).first()
     if not student:
         return redirect('dashboard')
 
@@ -311,7 +314,10 @@ def student_dashboard(request):
 
 @login_required(login_url='login')
 def supervisor_dashboard(request):
-    supervisor = Supervisor.objects.filter(email__iexact=(request.user.email or '')).first()
+    email = getattr(request.user, 'email', '') or ''
+    if Student.objects.filter(email__iexact=email).exists():
+        return redirect('student_dashboard')
+    supervisor = Supervisor.objects.filter(email__iexact=email).first()
     if not supervisor:
         return redirect('dashboard')
 
