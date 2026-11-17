@@ -59,8 +59,8 @@ def supervisor_update(request, pk):
 @require_POST
 def supervisor_delete(request, pk):
     supervisor = get_object_or_404(Supervisor, pk=pk)
-    if supervisor.placements.exists():
-        messages.error(request, 'This supervisor cannot be deleted while assigned to a placement.')
+    if supervisor.placements.exists() or supervisor.evaluations.exists():
+        messages.error(request, 'This supervisor cannot be deleted while assigned to a placement or an evaluation exists.')
         return redirect('supervisors:list')
     supervisor.delete()
     messages.success(request, 'Supervisor deleted successfully.')
