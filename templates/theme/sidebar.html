@@ -31,19 +31,6 @@
         <li class="nav-item">
           <span class="dh-nav-section">MENU</span>
         </li>
-        <li class="nav-item mb-1">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
-            href="{% url 'dashboard' %}"
-            aria-current="{% if request.resolver_match.url_name == 'dashboard' %}page{% else %}false{% endif %}"
-          >
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <i class="fa fa-dashboard"></i>
-            </span>
-            <span class="nav-link-title">Dashboard</span>
-          </a>
-        </li>
-
         {% if is_student %}
         <li class="nav-item mb-1">
           <a
@@ -58,73 +45,6 @@
           </a>
         </li>
         {% endif %}
-
-        {% if is_supervisor %}
-        <li class="nav-item mb-1">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'supervisor_dashboard' %}active{% endif %}"
-            href="{% url 'supervisor_dashboard' %}"
-            aria-current="{% if request.resolver_match.url_name == 'supervisor_dashboard' %}page{% else %}false{% endif %}"
-          >
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <i class="fas fa-user-tie"></i>
-            </span>
-            <span class="nav-link-title">Supervisor Dashboard</span>
-          </a>
-        </li>
-        {% endif %}
-
-        <li class="nav-item mb-1">
-          <a
-            class="nav-link {% if request.resolver_match.app_name == 'students' %}active{% endif %}"
-            href="{% url 'students:list' %}"
-            aria-current="{% if request.resolver_match.app_name == 'students' %}page{% else %}false{% endif %}"
-          >
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <i class="fas fa-user-graduate"></i>
-            </span>
-            <span class="nav-link-title">Students</span>
-          </a>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a
-            class="nav-link {% if request.resolver_match.app_name == 'companies' %}active{% endif %}"
-            href="{% url 'companies:list' %}"
-            aria-current="{% if request.resolver_match.app_name == 'companies' %}page{% else %}false{% endif %}"
-          >
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <i class="fas fa-building"></i>
-            </span>
-            <span class="nav-link-title">Companies</span>
-          </a>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a
-            class="nav-link {% if request.resolver_match.app_name == 'supervisors' %}active{% endif %}"
-            href="{% url 'supervisors:list' %}"
-            aria-current="{% if request.resolver_match.app_name == 'supervisors' %}page{% else %}false{% endif %}"
-          >
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <i class="fas fa-user-tie"></i>
-            </span>
-            <span class="nav-link-title">Supervisors</span>
-          </a>
-        </li>
-
-        <li class="nav-item mb-1">
-          <a
-            class="nav-link {% if request.resolver_match.app_name == 'placements' %}active{% endif %}"
-            href="{% url 'placements:list' %}"
-            aria-current="{% if request.resolver_match.app_name == 'placements' %}page{% else %}false{% endif %}"
-          >
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <i class="fa fa-briefcase"></i>
-            </span>
-            <span class="nav-link-title">OJT Placements</span>
-          </a>
-        </li>
 
       </ul>
 
