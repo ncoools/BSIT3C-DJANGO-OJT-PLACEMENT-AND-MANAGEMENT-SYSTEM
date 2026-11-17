@@ -23,6 +23,37 @@
     <div class="col-auto"><button class="btn btn-outline-primary" type="submit">Filter</button></div>
     {% if query or selected_status %}<div class="col-auto"><a class="btn btn-outline-secondary" href="{% url 'placements:list' %}">Clear</a></div>{% endif %}
   </form>
+  {% if placements %}
+  <div class="card mb-3">
+    <h2>Chosen student</h2>
+    <div class="tw">
+      <table>
+        <tbody>
+          <tr>
+            <th>Student</th>
+            <td>{{ placements.0.student.first_name }} {{ placements.0.student.last_name }} ({{ placements.0.student.student_number }})</td>
+          </tr>
+          <tr>
+            <th>Company</th>
+            <td>{{ placements.0.company.company_name }}</td>
+          </tr>
+          <tr>
+            <th>Age</th>
+            <td>{{ placements.0.student.age|default:"—" }}</td>
+          </tr>
+          <tr>
+            <th>Sex</th>
+            <td>{{ placements.0.student.sex|default:"—" }}</td>
+          </tr>
+          <tr>
+            <th>Status</th>
+            <td>{{ placements.0.get_status_display }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
   <div class="card">
     <div class="table-responsive">
       <table class="table table-vcenter card-table">

@@ -126,35 +126,6 @@
           </a>
         </li>
 
-        {% if first_placement_id %}
-        <li class="nav-item mb-1">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'evaluation_list' %}active{% endif %}"
-            href="{% url 'placements:evaluation_list' first_placement_id %}"
-            aria-current="{% if request.resolver_match.url_name == 'evaluation_list' %}page{% else %}false{% endif %}"
-          >
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <i class="fa fa-star"></i>
-            </span>
-            <span class="nav-link-title">Evaluations</span>
-          </a>
-        </li>
-        {% endif %}
-
-        {% if first_placement_id %}
-        <li class="nav-item mb-1">
-          <a
-            class="nav-link {% if request.resolver_match.url_name == 'report_list' %}active{% endif %}"
-            href="{% url 'placements:report_list' first_placement_id %}"
-            aria-current="{% if request.resolver_match.url_name == 'report_list' %}page{% else %}false{% endif %}"
-          >
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <i class="fa fa-file"></i>
-            </span>
-            <span class="nav-link-title">Reports</span>
-          </a>
-        </li>
-        {% endif %}
       </ul>
 
       <div class="dh-nav-sidebar-footer">
