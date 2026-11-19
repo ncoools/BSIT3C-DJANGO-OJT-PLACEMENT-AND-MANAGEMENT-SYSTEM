@@ -129,6 +129,21 @@
             <span class="nav-link-title">OJT Placements</span>
           </a>
         </li>
+
+        {% if pending_approvals_count %}
+        <li class="nav-item mb-1">
+          <a
+            class="nav-link {% if request.resolver_match.url_name == 'approvals' %}active{% endif %}"
+            href="{% url 'approvals' %}"
+            aria-current="{% if request.resolver_match.url_name == 'approvals' %}page{% else %}false{% endif %}"
+          >
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <i class="fa fa-user-clock"></i>
+            </span>
+            <span class="nav-link-title">Approvals <b class="count-badge">{{ pending_approvals_count }}</b></span>
+          </a>
+        </li>
+        {% endif %}
         {% endif %}
 
       </ul>

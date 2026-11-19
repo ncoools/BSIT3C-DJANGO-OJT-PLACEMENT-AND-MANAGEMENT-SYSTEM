@@ -76,7 +76,7 @@ class RegistrationTests(TestCase):
         user = get_user_model().objects.get(username='newstudent')
         self.assertTrue(user.groups.filter(name='student').exists())
 
-    def test_register_supervisor_creates_supervisor_and_group(self):
+    def test_register_supervisor_creates_pending_inactive_account(self):
         response = self.client.post(reverse('supervisor_register'), {
             'first_name': 'Sup',
             'last_name': 'Visor',
@@ -86,10 +86,52 @@ class RegistrationTests(TestCase):
             'supervisor_type': Supervisor.Type.COMPANY,
         })
 
-        self.assertRedirects(response, reverse('supervisor_dashboard'), fetch_redirect_response=False)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'auth/supervisor_pending.html')
         self.assertTrue(Supervisor.objects.filter(email__iexact='supnew@example.com').exists())
         user = get_user_model().objects.get(username='supnew@example.com')
+        self.assertFalse(user.is_active)
         self.assertTrue(user.groups.filter(name='supervisor').exists())
+
+    def test_admin_can_approve_pending_supervisor(self):
+        admin = get_user_model().objects.create_user(username='admin', password='secret1234', is_staff=True)
+        user = get_user_model().objects.create_user(username='sup2@example.com', email='sup2@example.com', password='secret-1234', is_active=False)
+        Supervisor.objects.create(first_name='Sup', last_name='Two', supervisor_type=Supervisor.Type.COMPANY, email='sup2@example.com')
+
+        self.client.force_login(admin)
+        response = self.client.post(reverse('approve_supervisor', args=[user.pk]))
+
+        self.assertRedirects(response, reverse('approvals'), fetch_redirect_response=False)
+        user.refresh_from_db()
+        self.assertTrue(user.is_active)
+
+    def test_admin_can_reject_pending_supervisor(self):
+        admin = get_user_model().objects.create_user(username='adminrej', password='secret1234', is_staff=True)
+        user = get_user_model().objects.create_user(username='sup3@example.com', email='sup3@example.com', password='secret-1234', is_active=False)
+        Supervisor.objects.create(first_name='Sup', last_name='Three', supervisor_type=Supervisor.Type.COMPANY, email='sup3@example.com')
+
+        self.client.force_login(admin)
+        response = self.client.post(reverse('reject_supervisor', args=[user.pk]))
+
+        self.assertRedirects(response, reverse('approvals'), fetch_redirect_response=False)
+        self.assertFalse(get_user_model().objects.filter(username='sup3@example.com').exists())
+        self.assertFalse(Supervisor.objects.filter(email__iexact='sup3@example.com').exists())
+
+    def test_pending_supervisor_cannot_reach_approvals_page(self):
+        # Inactive accounts resolve to anonymous on the next request, so
+        # login_required bounces them to the login page.
+        user = get_user_model().objects.create_user(username='sup4@example.com', email='sup4@example.com', password='secret-1234', is_active=False)
+        Supervisor.objects.create(first_name='Sup', last_name='Four', supervisor_type=Supervisor.Type.COMPANY, email='sup4@example.com')
+        self.client.force_login(user)
+        response = self.client.get(reverse('approvals'))
+        self.assertRedirects(response, '/?next=/approvals/', fetch_redirect_response=False)
+
+    def test_non_admin_supervisor_redirected_from_approvals_page(self):
+        user = get_user_model().objects.create_user(username='sup5@example.com', email='sup5@example.com', password='secret-1234', is_active=True)
+        Supervisor.objects.create(first_name='Sup', last_name='Five', supervisor_type=Supervisor.Type.COMPANY, email='sup5@example.com')
+        self.client.force_login(user)
+        response = self.client.get(reverse('approvals'))
+        self.assertRedirects(response, reverse('dashboard'), fetch_redirect_response=False)
 
 
 class AdminModuleAccessTests(TestCase):

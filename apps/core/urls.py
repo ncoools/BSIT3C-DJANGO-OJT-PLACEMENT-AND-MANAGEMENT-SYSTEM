@@ -11,4 +11,7 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('register/', views.register_view, name='register'),
     path('supervisor-register/', views.supervisor_register_view, name='supervisor_register'),
+    path('approvals/', views.approvals_view, name='approvals'),
+    path('approvals/<int:user_id>/approve/', views.approve_supervisor, name='approve_supervisor'),
+    path('approvals/<int:user_id>/reject/', views.reject_supervisor, name='reject_supervisor'),
 ]

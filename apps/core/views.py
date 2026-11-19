@@ -1,6 +1,8 @@
 import random
 from datetime import date, datetime, timedelta
 
+from apps import authz
+
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
@@ -9,7 +11,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
@@ -186,6 +188,15 @@ def login_view(request):
         _reset_lock_state(request)
         login(request, user)
         return redirect('dashboard')
+
+    # Surface a clear message when the account exists but is still pending approval
+    pending_user = User.objects.filter(is_active=False).filter(
+        username__iexact=username,
+    ).first() or User.objects.filter(is_active=False, email__iexact=username).first()
+    if pending_user:
+        _reset_lock_state(request)
+        messages.info(request, 'Your account is pending administrator approval. You will be notified once it is approved.')
+        return render(request, 'auth/login.html')
 
     failed_attempts += 1
     request.session['failed_attempts'] = failed_attempts
@@ -676,6 +687,9 @@ def supervisor_register_view(request):
         email=form_data['email'].strip(),
         password=form_data['password'],
     )
+    # Lockdown: supervisor accounts require admin approval before they can log in
+    user.is_active = False
+    user.save()
 
     Supervisor.objects.create(
         supervisor_type=form_data['supervisor_type'],
@@ -684,5 +698,46 @@ def supervisor_register_view(request):
         email=user.email,
     )
 
-    login(request, user)
-    return redirect('supervisor_dashboard')
+    messages.info(request, 'Your supervisor account has been submitted for review. An administrator must approve it before you can sign in.')
+    return render(request, 'auth/supervisor_pending.html', {'email': user.email})
+
+
+@login_required(login_url='login')
+def approvals_view(request):
+    if not authz.is_admin(request.user):
+        return redirect('dashboard')
+    pending = [
+        {
+            'user': user,
+            'supervisor': Supervisor.objects.filter(email__iexact=user.email).first(),
+        }
+        for user in User.objects.filter(is_active=False).order_by('date_joined')
+        if Supervisor.objects.filter(email__iexact=user.email).exists()
+    ]
+    return render(request, 'approvals.html', {
+        'pending': pending,
+    })
+
+
+@login_required(login_url='login')
+@require_POST
+def approve_supervisor(request, user_id):
+    if not authz.is_admin(request.user):
+        return redirect('dashboard')
+    user = get_object_or_404(User, pk=user_id, is_active=False)
+    user.is_active = True
+    user.save()
+    messages.success(request, f'{user.get_full_name() or user.username} approved as supervisor.')
+    return redirect('approvals')
+
+
+@login_required(login_url='login')
+@require_POST
+def reject_supervisor(request, user_id):
+    if not authz.is_admin(request.user):
+        return redirect('dashboard')
+    user = get_object_or_404(User, pk=user_id, is_active=False)
+    Supervisor.objects.filter(email__iexact=user.email).delete()
+    user.delete()
+    messages.success(request, 'Supervisor application rejected and removed.')
+    return redirect('approvals')

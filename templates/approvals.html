@@ -1,0 +1,46 @@
+{% extends "theme/base.html" %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none mb-3">
+    <div class="row align-items-center">
+      <div class="col"><h2 class="page-title">Approvals</h2></div>
+    </div>
+  </div>
+  {% for message in messages %}<div class="alert alert-success">{{ message }}</div>{% endfor %}
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr><th>Name</th><th>Email</th><th>Type</th><th>Registered</th><th class="w-1">Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for item in pending %}
+            <tr>
+              <td class="fw-semibold">{{ item.user.get_full_name }}</td>
+              <td>{{ item.user.email }}</td>
+              <td>{{ item.supervisor.get_supervisor_type_display }}</td>
+              <td>{{ item.user.date_joined|date:"M j, Y" }}</td>
+              <td>
+                <div class="d-flex gap-2">
+                  <form method="post" action="{% url 'approve_supervisor' item.user.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-success" type="submit">Approve</button>
+                  </form>
+                  <form method="post" action="{% url 'reject_supervisor' item.user.pk %}" onsubmit="return confirm('Reject and permanently delete this signup?');">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Reject</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-secondary p-5">No pending approvals right now.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
