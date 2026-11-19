@@ -158,43 +158,6 @@
             </div>
           </div>
 
-          <!-- Role -->
-          <div class="mb-3">
-            <label class="form-label required">Register as</label>
-            <div class="d-flex gap-3">
-              <label class="form-check">
-                <input
-                  type="radio"
-                  name="role"
-                  class="form-check-input {% if errors.role %}is-invalid{% endif %}"
-                  value="student"
-                  {% if form_data.role == 'student' %}checked{% endif %}>
-                <span class="form-check-label">Student</span>
-              </label>
-              <label class="form-check">
-                <input
-                  type="radio"
-                  name="role"
-                  class="form-check-input {% if errors.role %}is-invalid{% endif %}"
-                  value="supervisor"
-                  {% if form_data.role == 'supervisor' %}checked{% endif %}>
-                <span class="form-check-label">Supervisor</span>
-              </label>
-              <label class="form-check">
-                <input
-                  type="radio"
-                  name="role"
-                  class="form-check-input {% if errors.role %}is-invalid{% endif %}"
-                  value="admin"
-                  {% if form_data.role == 'admin' %}checked{% endif %}>
-                <span class="form-check-label">Admin</span>
-              </label>
-            </div>
-            {% if errors.role %}
-            <div class="invalid-feedback">{{ errors.role }}</div>
-            {% endif %}
-          </div>
-
           <!-- Password -->
           <div class="mb-3">
             <label class="form-label required">Password</label>
@@ -248,6 +211,8 @@
     <div class="text-center text-secondary mt-3">
       Already have an account?
       <a href="{% url 'login' %}" class="text-primary fw-bold">Login</a>
+      <span class="mx-2">·</span>
+      <a href="{% url 'supervisor_register' %}" class="text-primary fw-bold">Supervisor Registration</a>
     </div>
   </div>
 

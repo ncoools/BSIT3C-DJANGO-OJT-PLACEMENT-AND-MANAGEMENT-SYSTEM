@@ -118,9 +118,50 @@ def _validate_registration_data(data):
     if student_number and Student.objects.filter(student_number=student_number).exists():
         errors['student_number'] = 'Student number already taken.'
 
-    role = data.get('role', 'student')
-    if role not in ('student', 'supervisor', 'admin'):
-        errors['role'] = 'Select a valid role.'
+    return errors
+
+
+def _validate_supervisor_registration_data(data):
+    errors = {}
+    first_name = data.get('first_name', '').strip()
+    last_name = data.get('last_name', '').strip()
+    email = data.get('email', '').strip()
+    password = data.get('password', '')
+    confirm_password = data.get('confirm_password', '')
+
+    if not first_name:
+        errors['first_name'] = 'First name is required.'
+
+    if not last_name:
+        errors['last_name'] = 'Last name is required.'
+
+    if not email:
+        errors['email'] = 'Email is required.'
+    else:
+        try:
+            validate_email(email)
+        except ValidationError:
+            errors['email'] = 'Enter a valid email address.'
+        else:
+            if User.objects.filter(email=email).exists() or Supervisor.objects.filter(email__iexact=email).exists():
+                errors['email'] = 'Email already registered.'
+
+    if not password:
+        errors['password'] = 'Password is required.'
+    elif len(password) < 8:
+        errors['password'] = 'Password must be at least 8 characters.'
+    else:
+        try:
+            validate_password(password)
+        except ValidationError as exc:
+            errors['password'] = ' '.join(exc.messages)
+
+    if password != confirm_password:
+        errors['confirm_password'] = 'Passwords do not match.'
+
+    supervisor_type = data.get('supervisor_type', Supervisor.Type.COMPANY)
+    if supervisor_type not in Supervisor.Type.values:
+        errors['supervisor_type'] = 'Select a valid supervisor type.'
 
     return errors
 
@@ -373,14 +414,12 @@ def register_view(request):
         'password': request.POST.get('password', ''),
         'confirm_password': request.POST.get('confirm_password', ''),
         'student_number': request.POST.get('student_number', ''),
-        'role': request.POST.get('role', 'student'),
     }
 
     errors = _validate_registration_data(form_data)
     if errors:
         return render(request, 'auth/register.html', {'errors': errors, 'form_data': form_data})
 
-    role = form_data.get('role', 'student')
     user = User.objects.create_user(
         username=form_data['username'].strip(),
         first_name=form_data['first_name'].strip(),
@@ -389,30 +428,58 @@ def register_view(request):
         password=form_data['password'],
     )
 
-    if role == 'admin':
-        user.is_staff = True
-        user.is_superuser = True
-        user.save()
-    elif role == 'student':
-        student_number = form_data.get('student_number', '').strip()
-        department = Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY').first()
-        if department:
-            if not student_number:
-                student_number = _generate_student_number(department.department_name)
-            Student.objects.create(
-                student_number=student_number,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                email=user.email,
-                department=department,
-            )
-    elif role == 'supervisor':
-        Supervisor.objects.create(
-            supervisor_type=Supervisor.Type.SCHOOL,
+    student_number = form_data.get('student_number', '').strip()
+    department = Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY').first()
+    if department:
+        if not student_number:
+            student_number = _generate_student_number(department.department_name)
+        Student.objects.create(
+            student_number=student_number,
             first_name=user.first_name,
             last_name=user.last_name,
             email=user.email,
+            department=department,
         )
 
     login(request, user)
     return redirect('dashboard')
+
+
+@require_http_methods(['GET', 'POST'])
+def supervisor_register_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    if request.method == 'GET':
+        return render(request, 'auth/supervisor_register.html')
+
+    form_data = {
+        'first_name': request.POST.get('first_name', ''),
+        'last_name': request.POST.get('last_name', ''),
+        'email': request.POST.get('email', ''),
+        'password': request.POST.get('password', ''),
+        'confirm_password': request.POST.get('confirm_password', ''),
+        'supervisor_type': request.POST.get('supervisor_type', Supervisor.Type.COMPANY),
+    }
+
+    errors = _validate_supervisor_registration_data(form_data)
+    if errors:
+        return render(request, 'auth/supervisor_register.html', {'errors': errors, 'form_data': form_data})
+
+    user = User.objects.create_user(
+        username=form_data['email'].strip(),
+        first_name=form_data['first_name'].strip(),
+        last_name=form_data['last_name'].strip(),
+        email=form_data['email'].strip(),
+        password=form_data['password'],
+    )
+
+    Supervisor.objects.create(
+        supervisor_type=form_data['supervisor_type'],
+        first_name=user.first_name,
+        last_name=user.last_name,
+        email=user.email,
+    )
+
+    login(request, user)
+    return redirect('supervisor_dashboard')
