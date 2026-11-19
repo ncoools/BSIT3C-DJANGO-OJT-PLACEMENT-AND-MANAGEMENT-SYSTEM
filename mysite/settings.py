@@ -47,8 +47,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'apps.core.apps.CoreConfig',
-    'apps.users',
-    'apps.info',
     'apps.departments',
     'apps.students.apps.StudentsConfig',
     'apps.companies',
