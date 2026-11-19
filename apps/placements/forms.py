@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Placement, PlacementEvaluation, PlacementReport, PlacementRequirement
+from .models import Placement, PlacementEvaluation, PlacementReport, PlacementRequirement, Attendance
 
 
 class PlacementForm(forms.ModelForm):
@@ -51,6 +51,17 @@ class EvaluationForm(forms.ModelForm):
             'evaluation_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'score': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01'}),
             'remarks': forms.Textarea(attrs={'class': 'form-control'}),
+        }
+
+
+class AttendanceForm(forms.ModelForm):
+    class Meta:
+        model = Attendance
+        fields = ['time_in', 'time_out', 'status']
+        widgets = {
+            'time_in': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'time_out': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
 

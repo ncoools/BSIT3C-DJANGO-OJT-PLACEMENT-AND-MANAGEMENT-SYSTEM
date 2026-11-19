@@ -5,12 +5,15 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import (
+    AttendanceForm,
     EvaluationForm,
     PlacementForm,
     ReportForm,
     RequirementForm,
 )
 from .models import (
+    Attendance,
+    OJTSchedule,
     Placement,
     PlacementEvaluation,
     PlacementReport,
@@ -263,3 +266,21 @@ def placement_report_delete(request, pk, report_pk):
     report.delete()
     messages.success(request, 'Placement report deleted successfully.')
     return redirect('placements:report_list', pk=pk)
+
+
+# PLACEMENT ATTENDANCE
+@login_required(login_url='login')
+def placement_attendance_update(request, pk, attendance_pk):
+    placement = get_object_or_404(Placement, pk=pk)
+    attendance = get_object_or_404(Attendance, pk=attendance_pk, placement=placement)
+    form = AttendanceForm(request.POST or None, instance=attendance)
+    if request.method == 'POST' and form.is_valid():
+        attendance = form.save()  # hours_rendered auto-calculated on save
+        messages.success(request, 'Attendance updated successfully.')
+        return redirect('supervisor_dashboard')
+    return render(request, 'placements/attendance_form.html', {
+        'form': form,
+        'title': 'Edit attendance',
+        'placement': placement,
+        'attendance': attendance,
+    })

@@ -1,5 +1,5 @@
 import random
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
@@ -384,6 +384,20 @@ def supervisor_dashboard(request):
         .select_related('placement__student', 'placement__company')
         .order_by('-attendance_date')
     )
+
+    # Daily required hours from OJT schedule (fallback to 8 hours/day)
+    weekday_map = {0: 'Mon', 1: 'Tue', 2: 'Wed', 3: 'Thu', 4: 'Fri', 5: 'Sat', 6: 'Sun'}
+    schedule_hours = {}
+    for p in placements:
+        for s in p.schedules.all():
+            start = datetime.combine(date.today(), s.time_in)
+            end = datetime.combine(date.today(), s.time_out)
+            if end < start:
+                end += timedelta(days=1)
+            schedule_hours[(p.pk, s.day_of_week)] = round((end - start).total_seconds() / 3600, 2)
+    for record in attendance_records:
+        weekday = weekday_map.get(record.attendance_date.weekday(), 'Mon')
+        record.daily_required_hours = schedule_hours.get((record.placement_id, weekday), 8)
 
     # Accumulated (every day) attendance hours vs required hours
     consumed_hours = sum(
