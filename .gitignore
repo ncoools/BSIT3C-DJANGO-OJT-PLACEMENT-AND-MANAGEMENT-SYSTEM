@@ -14,6 +14,7 @@ staticfiles/
 .env
 .env.*
 *.pem
+*.sql
 
 # Virtual environments
 venv/
