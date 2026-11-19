@@ -7,6 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.db.models import Count, Sum
+from django.db.models.functions import TruncMonth
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
@@ -253,6 +255,31 @@ def home(request):
         })
         running_offset += pct
 
+    # --- Analytics ---
+    placements_by_month = list(
+        Placement.objects
+        .annotate(month=TruncMonth('start_date'))
+        .values('month')
+        .annotate(count=Count('pk'))
+        .order_by('month')
+    )
+    month_labels = [entry['month'].strftime('%b %Y') if entry['month'] else '—' for entry in placements_by_month]
+    month_data = [entry['count'] for entry in placements_by_month]
+
+    students_per_company = list(
+        Company.objects
+        .annotate(student_count=Count('placements__student', distinct=True))
+        .order_by('-student_count')[:5]
+        .values('company_name', 'student_count')
+    )
+    company_names = [entry['company_name'] for entry in students_per_company]
+    company_data = [entry['student_count'] for entry in students_per_company]
+
+    total_rendered_hours = float(
+        Attendance.objects.aggregate(total=Sum('hours_rendered'))['total'] or 0
+    )
+    total_required_hours = Placement.objects.aggregate(total=Sum('required_hours'))['total'] or 0
+
     context = {
         'total_students': total_students,
         'partner_companies': partner_companies,
@@ -266,6 +293,12 @@ def home(request):
         'pending_requirements_list': pending_requirements_list,
         'active_pct': round((active_placements / total_students * 100), 1) if total_students else 0,
         'completed_pct': round((completed_placements / total_students * 100), 1) if total_students else 0,
+        'month_labels': month_labels,
+        'month_data': month_data,
+        'company_names': company_names,
+        'company_data': company_data,
+        'total_rendered_hours': total_rendered_hours,
+        'total_required_hours': total_required_hours,
     }
 
     return render(request, 'home.html', context)

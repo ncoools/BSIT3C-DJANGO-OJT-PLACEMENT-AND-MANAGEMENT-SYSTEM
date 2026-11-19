@@ -70,6 +70,8 @@
   .dh-admin .c6 { grid-column: span 6; }
   .dh-admin .c7 { grid-column: span 7; }
   .dh-admin .c8 { grid-column: span 8; }
+  .dh-admin .c12 { grid-column: span 12; }
+  .dh-admin .chart-note { color: var(--mute); font-size: 12px; margin-top: 8px; }
   .dh-admin h2 { font-size: 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; color: var(--ink); }
   .dh-admin h2 a { font-size: 13px; color: var(--pri); font-weight: 500; text-decoration: none; }
   .dh-admin .donut { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
@@ -382,6 +384,25 @@
         </div>
       </div>
     </section>
+
+    <section class="grid row">
+      <div class="card c7">
+        <h2>Placements over time</h2>
+        <div id="chart-placements-month" style="height: 260px;"></div>
+      </div>
+      <div class="card c5">
+        <h2>Rendered vs required hours</h2>
+        <div id="chart-hours" style="height: 210px;"></div>
+        <p class="chart-note">{{ total_rendered_hours|floatformat:1 }} hours rendered of {{ total_required_hours }} required</p>
+      </div>
+    </section>
+
+    <section class="grid row">
+      <div class="card c12">
+        <h2>Students per company</h2>
+        <div id="chart-company" style="height: 220px;"></div>
+      </div>
+    </section>
   </div>
 </div>
 {% endblock %}
@@ -631,6 +652,76 @@
   });
 
   renderNotifs();
+})();
+</script>
+
+<script id="dh-analytics-data" type="application/json">
+{
+  "monthLabels": [{% for label in month_labels %}"{{ label|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
+  "monthData": [{% for value in month_data %}{{ value }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+  "companyNames": [{% for name in company_names %}"{{ name|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
+  "companyData": [{% for value in company_data %}{{ value }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+  "renderedHours": {{ total_rendered_hours|default:0 }},
+  "requiredHours": {{ total_required_hours|default:0 }}
+}
+</script>
+<script>
+(function () {
+  var el = document.getElementById('dh-analytics-data');
+  if (!el) { return; }
+  var data;
+  try { data = JSON.parse(el.textContent); } catch (e) { return; }
+  if (!window.ApexCharts) { return; }
+
+  var gold = '#F1D900';
+  var muted = '#A7B0A7';
+  var gridline = 'rgba(255, 255, 255, 0.08)';
+
+  var monthEl = document.getElementById('chart-placements-month');
+  if (monthEl) {
+    new ApexCharts(monthEl, {
+      chart: { type: 'area', height: 260, toolbar: { show: false }, fontFamily: 'inherit', foreColor: muted },
+      series: [{ name: 'Placements', data: data.monthData }],
+      xaxis: { categories: data.monthLabels, axisBorder: { color: gridline }, axisTicks: { color: gridline } },
+      yaxis: { min: 0, forceNiceScale: true },
+      stroke: { curve: 'smooth', width: 3 },
+      fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] } },
+      colors: [gold],
+      grid: { borderColor: gridline, strokeDashArray: 4 },
+      tooltip: { theme: 'dark' },
+      dataLabels: { enabled: false }
+    }).render();
+  }
+
+  var hoursEl = document.getElementById('chart-hours');
+  if (hoursEl) {
+    new ApexCharts(hoursEl, {
+      chart: { type: 'bar', height: 210, toolbar: { show: false }, fontFamily: 'inherit', foreColor: muted },
+      series: [{ name: 'Hours', data: [Math.round(data.renderedHours), data.requiredHours] }],
+      xaxis: { categories: ['Rendered', 'Required'], axisBorder: { color: gridline }, axisTicks: { color: gridline } },
+      yaxis: { min: 0 },
+      plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
+      colors: [gold, '#333B34'],
+      grid: { borderColor: gridline, strokeDashArray: 4 },
+      tooltip: { theme: 'dark' },
+      dataLabels: { enabled: true }
+    }).render();
+  }
+
+  var companyEl = document.getElementById('chart-company');
+  if (companyEl) {
+    new ApexCharts(companyEl, {
+      chart: { type: 'bar', height: 220, toolbar: { show: false }, fontFamily: 'inherit', foreColor: muted },
+      series: [{ name: 'Students', data: data.companyData }],
+      xaxis: { categories: data.companyNames, axisBorder: { color: gridline }, axisTicks: { color: gridline } },
+      yaxis: { min: 0, forceNiceScale: true },
+      plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '55%' } },
+      colors: [gold],
+      grid: { borderColor: gridline, strokeDashArray: 4 },
+      tooltip: { theme: 'dark' },
+      dataLabels: { enabled: true }
+    }).render();
+  }
 })();
 </script>
 {% endblock %}
