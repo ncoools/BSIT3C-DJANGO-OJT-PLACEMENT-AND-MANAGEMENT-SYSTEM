@@ -1,0 +1,5 @@
+# CI/test-only dependencies.
+# Production adds: mysqlclient (MySQL), openpyxl (exports).
+Django==6.1.2
+pytest
+pytest-django
