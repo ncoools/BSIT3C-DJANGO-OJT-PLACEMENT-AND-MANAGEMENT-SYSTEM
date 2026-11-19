@@ -471,6 +471,7 @@ def supervisor_dashboard(request):
             if end < start:
                 end += timedelta(days=1)
             schedule_hours[(p.pk, s.day_of_week)] = round((end - start).total_seconds() / 3600, 2)
+
     for record in attendance_records:
         weekday = weekday_map.get(record.attendance_date.weekday(), 'Mon')
         record.daily_required_hours = schedule_hours.get((record.placement_id, weekday), 8)
@@ -528,11 +529,13 @@ def supervisor_dashboard(request):
             hours_display = f'{int(hrs)}h {round((hrs - int(hrs)) * 60):02d}m'
         else:
             hours_display = '—'
+        status_label = {'on-duty': 'On duty', 'completed': 'Completed', 'not-started': 'Not started', 'absent': 'Absent'}.get(status, 'Not started')
         today_rows.append({
             'placement': p,
             'student': p.student,
             'company': p.company,
             'status': status,
+            'status_label': status_label,
             'time_in': rec.time_in if rec else None,
             'time_out': rec.time_out if rec else None,
             'hours': rec.hours_rendered if rec else None,

@@ -178,7 +178,7 @@
                     data-attendance-date="{{ row.attendance_date|date:'Y-m-d' }}">
                   <td class="nm"><span class="nm-name">{{ row.student.first_name }} {{ row.student.last_name }}</span><span class="id">{{ row.student.student_number }}</span></td>
                   <td>{{ row.company.company_name }}</td>
-                  <td class="c-center"><span class="pill {{ row.status }}">{{ row.status|cut:"-"|title }}</span></td>
+                  <td class="c-center"><span class="pill {{ row.status }}">{{ row.status_label }}</span></td>
                   <td class="c-center">{% if row.time_in %}{{ row.time_in|time:"H:i" }}{% else %}—{% endif %}</td>
                   <td class="c-center">{% if row.time_out %}{{ row.time_out|time:"H:i" }}{% else %}—{% endif %}</td>
                   <td class="c-center">{{ row.hours_display }}</td>
