@@ -292,12 +292,15 @@
     <span class="sp"></span>
     <div class="dh-notif">
       <button class="dh-bell" type="button" id="dh-notif-button" aria-label="Notifications" aria-expanded="false" aria-haspopup="true">
-        <span class="bell">🔔<s id="dh-notif-badge">5</s></span>
+        <span class="bell">🔔{% if unread_notifications %}<s id="dh-notif-badge">{{ unread_notifications }}</s>{% endif %}</span>
       </button>
       <div class="dh-notif-panel" id="dh-notif-panel" hidden>
         <div class="dh-notif-head">
           <span>Notifications</span>
-          <button type="button" class="dh-notif-clear" id="dh-notif-clear">Mark all read</button>
+          <form method="post" action="{% url 'notifications:mark_all_read' %}" style="display:inline">
+            {% csrf_token %}
+            <button type="submit" class="dh-notif-clear" id="dh-notif-clear">Mark all read</button>
+          </form>
         </div>
         <ul class="dh-notif-list" id="dh-notif-list"></ul>
         <div class="dh-notif-empty" id="dh-notif-empty" hidden>No new notifications</div>
@@ -557,13 +560,16 @@
 
 <script id="dh-notif-data" type="application/json">
 [
+  {% for n in recent_notifications %}
   {
-    "id": "unplaced",
-    "title": "{{ unplaced_students }} student(s) without a placement",
-    "desc": "OJT starts Nov 15",
-    "link": "{% url 'students:list' %}",
-    "tone": "bad"
-  }
+    "id": {{ n.id }},
+    "title": "{{ n.title|escapejs }}",
+    "desc": "{{ n.message|escapejs|truncatewords:20 }}",
+    "link": "{% url 'notifications:mark_read' n.id %}",
+    "tone": "{% if n.category == 'placement_ending' or n.category == 'evaluation_due' %}warn{% else %}bad{% endif %}"
+  }{% if not forloop.last %},
+  {% endif %}
+  {% endfor %}
 ]
 </script>
 <script>

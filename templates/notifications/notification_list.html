@@ -1,0 +1,40 @@
+{% extends "theme/base.html" %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none mb-3">
+    <div class="row align-items-center">
+      <div class="col"><h2 class="page-title">Notifications {% if unread %}<span class="badge bg-warning text-dark">{{ unread }}</span>{% endif %}</h2></div>
+      <div class="col-auto">
+        <form method="post" action="{% url 'notifications:mark_all_read' %}" style="display:inline">
+          {% csrf_token %}
+          <button class="btn btn-outline-primary" type="submit">Mark all read</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="list-group">
+        {% for n in notifications %}
+        <a href="{% url 'notifications:mark_read' n.pk %}" class="list-group-item list-group-item-action {% if not n.is_read %}bg-light-subtle fw-bold{% endif %}">
+          <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-{% if n.category == 'unplaced_student' %}danger{% elif n.category == 'placement_ending' or n.category == 'evaluation_due' %}warning text-dark{% else %}secondary{% endif %}">{{ n.get_category_display }}</span>
+            <div class="flex-fill">
+              <div class="fw-semibold">{{ n.title }}</div>
+              <div class="text-secondary small">{{ n.message }}</div>
+            </div>
+            <div class="text-secondary small text-nowrap">{{ n.created_at|date:"M j, Y · g:i A" }}</div>
+          </div>
+        </a>
+        {% empty %}
+        <div class="text-center text-muted p-5">
+          <i class="fa fa-check-circle fa-2x text-success mb-2"></i>
+          <p>You're all caught up. No notifications yet.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

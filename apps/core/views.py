@@ -240,6 +240,13 @@ def home(request):
         ('Pending', Placement.Status.PLANNED, '#D97706'),
         ('Dropped', Placement.Status.CANCELLED, '#dc2626'),
     ]
+    from apps.notifications.models import Notification
+    unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+    recent_notifications = list(
+        Notification.objects.filter(user=request.user).order_by('-created_at')[:10].values(
+            'id', 'title', 'message', 'category', 'link', 'is_read',
+        )
+    )
     status_segments = []
     total_status = sum(Placement.objects.filter(status=status).count() for _, status, _ in status_rows)
     running_offset = 0
@@ -299,6 +306,8 @@ def home(request):
         'company_data': company_data,
         'total_rendered_hours': total_rendered_hours,
         'total_required_hours': total_required_hours,
+        'unread_notifications': unread_notifications,
+        'recent_notifications': recent_notifications,
     }
 
     return render(request, 'home.html', context)
