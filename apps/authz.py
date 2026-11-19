@@ -33,11 +33,11 @@ def current_supervisor(user):
 
 
 def is_student(user):
-    return bool(user and user.is_authenticated and current_student(user))
+    return bool(user and user.is_authenticated and user.groups.filter(name='student').exists())
 
 
 def is_supervisor(user):
-    return bool(user and user.is_authenticated and current_supervisor(user))
+    return bool(user and user.is_authenticated and user.groups.filter(name='supervisor').exists())
 
 
 def is_admin(user):
