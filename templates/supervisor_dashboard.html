@@ -179,7 +179,7 @@
                 <tr class="srow{% if forloop.first %} sel{% endif %}" data-k="{{ forloop.counter0 }}"
                     data-name="{{ row.student.first_name }} {{ row.student.last_name }}"
                     data-id="{{ row.student.student_number }}"
-                    data-program="{{ row.student.department.department_name }}"
+                    data-program="{{ row.student.contact_no|default:'No contact number' }}"
                     data-company="{{ row.company.company_name }}"
                     data-status="{{ row.status }}"
                     data-tin="{% if row.time_in %}{{ row.time_in|time:'H:i' }}{% endif %}"

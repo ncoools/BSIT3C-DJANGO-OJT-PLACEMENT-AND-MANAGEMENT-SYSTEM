@@ -11,14 +11,13 @@ from .models import Student
 @login_required(login_url='login')
 def student_list(request):
     query = request.GET.get('q', '').strip()
-    students = Student.objects.select_related('department')
+    students = Student.objects.all()
     if query:
         students = students.filter(
             Q(student_number__icontains=query) |
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query) |
-            Q(email__icontains=query) |
-            Q(department__department_name__icontains=query)
+            Q(email__icontains=query)
         )
     return render(request, 'students/student_list.html', {'students': students, 'query': query})
 

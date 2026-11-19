@@ -9,7 +9,6 @@ from django.test import RequestFactory
 from django.urls import reverse
 
 from apps.companies.models import Company
-from apps.departments.models import Department
 from apps.students.models import Student
 from apps.supervisors.models import Supervisor
 from .forms import PlacementForm
@@ -21,12 +20,10 @@ class PlacementTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(username='tester', password='test-password')
         self.client.force_login(self.user)
-        department = Department.objects.create(department_name='Information Technology')
         self.student = Student.objects.create(
             student_number='2026-001',
             first_name='Jamie',
             last_name='Doe',
-            department=department,
         )
         self.company = Company.objects.create(company_name='North Star')
         self.supervisor = Supervisor.objects.create(

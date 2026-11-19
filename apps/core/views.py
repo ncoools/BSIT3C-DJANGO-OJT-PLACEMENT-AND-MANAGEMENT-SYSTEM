@@ -7,14 +7,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.db.models import Count
 from django.shortcuts import redirect, render
 from django.utils import timezone
-from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.companies.models import Company
-from apps.departments.models import Department
 from apps.placements.models import Placement, PlacementRequirement, PlacementEvaluation, Attendance
 from apps.supervisors.models import Supervisor
 from apps.students.models import Student
@@ -60,8 +57,8 @@ def _set_lock_state(request):
     return int(LOCK_DURATION.total_seconds())
 
 
-def _generate_student_number(department_name):
-    base = slugify(department_name).upper().replace('-', '').replace(' ', '')[:8] or 'OJT'
+def _generate_student_number():
+    base = 'OJT'
     while True:
         candidate = f"{base}-{random.randint(100, 9999)}"
         if not Student.objects.filter(student_number=candidate).exists():
@@ -221,22 +218,6 @@ def home(request):
     pending_requirements = PlacementRequirement.objects.filter(status=PlacementRequirement.Status.PENDING).count()
     unplaced_students = Student.objects.filter(placements__isnull=True).distinct().count()
 
-    departments = list(
-        Department.objects
-        .filter(department_name__iexact='INFORMATION TECHNOLOGY')
-        .annotate(student_count=Count('students'))
-        .order_by('-student_count', 'department_name')
-    )
-    max_students = max((dept.student_count for dept in departments), default=0)
-    department_stats = [
-        {
-            'department_name': dept.department_name,
-            'student_count': dept.student_count,
-            'student_width': round((dept.student_count / max_students * 100), 0) if max_students else 0,
-        }
-        for dept in departments
-    ]
-
     recent_placements = list(
         Placement.objects
         .select_related('student', 'company', 'supervisor')
@@ -280,7 +261,6 @@ def home(request):
         'completed_placements': completed_placements,
         'pending_requirements': pending_requirements,
         'unplaced_students': unplaced_students,
-        'department_stats': department_stats,
         'status_segments': status_segments,
         'recent_placements': recent_placements,
         'pending_requirements_list': pending_requirements_list,
@@ -610,17 +590,14 @@ def register_view(request):
     )
 
     student_number = form_data.get('student_number', '').strip()
-    department = Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY').first()
-    if department:
-        if not student_number:
-            student_number = _generate_student_number(department.department_name)
-        Student.objects.create(
-            student_number=student_number,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            email=user.email,
-            department=department,
-        )
+    if not student_number:
+        student_number = _generate_student_number()
+    Student.objects.create(
+        student_number=student_number,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        email=user.email,
+    )
 
     login(request, user)
     return redirect('dashboard')

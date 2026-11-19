@@ -1,7 +1,6 @@
 from django.db import models
 
 from apps.companies.models import Company
-from apps.departments.models import Department
 
 
 class Supervisor(models.Model):
@@ -17,13 +16,6 @@ class Supervisor(models.Model):
     contact_no = models.CharField(max_length=20, blank=True, null=True)
     company = models.ForeignKey(
         Company,
-        on_delete=models.PROTECT,
-        blank=True,
-        null=True,
-        related_name='supervisors',
-    )
-    department = models.ForeignKey(
-        Department,
         on_delete=models.PROTECT,
         blank=True,
         null=True,

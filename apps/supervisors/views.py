@@ -11,7 +11,7 @@ from .models import Supervisor
 @login_required(login_url='login')
 def supervisor_list(request):
     query = request.GET.get('q', '').strip()
-    supervisors = Supervisor.objects.select_related('company', 'department')
+    supervisors = Supervisor.objects.select_related('company')
     if query:
         supervisors = supervisors.filter(
             Q(first_name__icontains=query)
@@ -19,7 +19,6 @@ def supervisor_list(request):
             | Q(email__icontains=query)
             | Q(contact_no__icontains=query)
             | Q(company__company_name__icontains=query)
-            | Q(department__department_name__icontains=query)
         )
     return render(request, 'supervisors/supervisor_list.html', {
         'supervisors': supervisors,

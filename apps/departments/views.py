@@ -42,9 +42,6 @@ def department_update(request, pk):
 @require_POST
 def department_delete(request, pk):
     department = get_object_or_404(Department, pk=pk)
-    if department.students.exists():
-        messages.error(request, 'This department cannot be deleted while students are assigned to it.')
-        return redirect('departments:list')
     department.delete()
     messages.success(request, 'Department deleted successfully.')
     return redirect('departments:list')

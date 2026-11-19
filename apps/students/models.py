@@ -1,8 +1,6 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from apps.departments.models import Department
-
 
 def student_document_path(instance, filename):
     return f'students/{instance.pk}/{filename}'
@@ -14,7 +12,6 @@ class Student(models.Model):
     last_name = models.CharField(max_length=50)
     email = models.EmailField(max_length=100, blank=True)
     contact_no = models.CharField(max_length=20, blank=True)
-    department = models.ForeignKey(Department, on_delete=models.PROTECT, related_name='students')
     age = models.PositiveSmallIntegerField(
         null=True,
         blank=True,

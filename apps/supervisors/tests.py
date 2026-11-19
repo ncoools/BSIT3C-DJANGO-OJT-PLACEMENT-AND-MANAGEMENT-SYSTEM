@@ -8,7 +8,6 @@ from django.test import RequestFactory
 from django.urls import reverse
 
 from apps.companies.models import Company
-from apps.departments.models import Department
 from apps.placements.models import Placement
 from apps.students.models import Student
 from .models import Supervisor
@@ -16,22 +15,19 @@ from .views import supervisor_list
 
 
 class SupervisorModelTests(TestCase):
-    def test_supervisor_can_reference_company_and_department(self):
+    def test_supervisor_can_reference_company(self):
         company = Company.objects.create(company_name='North Star')
-        department = Department.objects.create(department_name='Information Technology')
 
         supervisor = Supervisor.objects.create(
             first_name='Alex',
             last_name='Smith',
             supervisor_type=Supervisor.Type.COMPANY,
             company=company,
-            department=department,
         )
 
         self.assertEqual(supervisor.company, company)
-        self.assertEqual(supervisor.department, department)
 
-    def test_company_and_department_are_optional(self):
+    def test_company_is_optional(self):
         supervisor = Supervisor.objects.create(
             first_name='Jamie',
             last_name='Doe',
@@ -39,7 +35,6 @@ class SupervisorModelTests(TestCase):
         )
 
         self.assertIsNone(supervisor.company)
-        self.assertIsNone(supervisor.department)
 
 
 class SupervisorViewTests(TestCase):
@@ -47,7 +42,6 @@ class SupervisorViewTests(TestCase):
         self.user = get_user_model().objects.create_user(username='tester', password='test-password')
         self.client.force_login(self.user)
         self.company = Company.objects.create(company_name='North Star')
-        self.department = Department.objects.create(department_name='Information Technology')
 
     def list_response(self, query=''):
         request = RequestFactory().get(reverse('supervisors:list'), {'q': query})
@@ -64,7 +58,6 @@ class SupervisorViewTests(TestCase):
             'email': 'alex@example.com',
             'contact_no': '555-0100',
             'company': self.company.pk,
-            'department': self.department.pk,
         })
 
         supervisor = Supervisor.objects.get()
@@ -83,7 +76,6 @@ class SupervisorViewTests(TestCase):
             student_number='2026-101',
             first_name='Jamie',
             last_name='Doe',
-            department=self.department,
         )
         placement = Placement.objects.create(
             student=student,

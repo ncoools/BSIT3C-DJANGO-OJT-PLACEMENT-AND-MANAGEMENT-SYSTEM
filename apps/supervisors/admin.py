@@ -11,8 +11,7 @@ class SupervisorAdmin(admin.ModelAdmin):
         'last_name',
         'supervisor_type',
         'company',
-        'department',
         'email',
     )
-    list_filter = ('supervisor_type', 'company', 'department')
+    list_filter = ('supervisor_type', 'company')
     search_fields = ('first_name', 'last_name', 'email', 'contact_no')
