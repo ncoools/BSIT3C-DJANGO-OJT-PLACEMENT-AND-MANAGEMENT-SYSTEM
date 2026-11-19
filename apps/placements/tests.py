@@ -13,7 +13,7 @@ from apps.departments.models import Department
 from apps.students.models import Student
 from apps.supervisors.models import Supervisor
 from .forms import PlacementForm
-from .models import Placement, Attendance
+from .models import Placement, PlacementEvaluation, Attendance
 from .views import placement_list
 
 
@@ -336,5 +336,61 @@ class PdfReportTests(TestCase):
         response = self.client.get(reverse('placements:pdf_report', args=[other_placement.pk]))
 
         self.assertEqual(response.status_code, 403)
+
+
+class EvaluationAssignmentTests(TestCase):
+    """Supervisor accounts get the evaluator field locked to themselves."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.supervisor_user = User.objects.create_user(username='sup', password='test-password', email='sup@example.com')
+        self.other_supervisor_user = User.objects.create_user(username='sup2', password='test-password', email='sup2@example.com')
+
+        department = Department.objects.create(department_name='Information Technology')
+        self.company = Company.objects.create(company_name='North Star')
+        self.supervisor = Supervisor.objects.create(
+            first_name='Alex', last_name='Smith', supervisor_type=Supervisor.Type.COMPANY,
+            company=self.company, email='sup@example.com',
+        )
+        self.other_supervisor = Supervisor.objects.create(
+            first_name='Sam', last_name='Lee', supervisor_type=Supervisor.Type.COMPANY,
+            company=self.company, email='sup2@example.com',
+        )
+        self.student = Student.objects.create(
+            student_number='2026-001', first_name='Jamie', last_name='Doe',
+            email='stud@example.com',
+        )
+        self.placement = Placement.objects.create(
+            student=self.student, company=self.company, supervisor=self.supervisor,
+            start_date=date(2026, 6, 1), end_date=date(2026, 9, 1),
+            required_hours=500, status=Placement.Status.IN_PROGRESS,
+        )
+
+    def test_supervisor_evaluator_auto_set_to_self(self):
+        self.client.force_login(self.supervisor_user)
+        response = self.client.post(reverse('placements:evaluation_create', args=[self.placement.pk]), {
+            'placement': self.placement.pk,
+            'evaluator': self.other_supervisor.pk,  # should be ignored, locked to self
+            'evaluation_date': '2026-06-10',
+            'score': '85',
+            'remarks': 'Good',
+        })
+
+        self.assertRedirects(response, reverse('placements:evaluation_list', args=[self.placement.pk]), fetch_redirect_response=False)
+        evaluation = PlacementEvaluation.objects.get()
+        self.assertEqual(evaluation.evaluator, self.supervisor)
+
+    def test_supervisor_cannot_change_evaluator_via_post(self):
+        self.client.force_login(self.supervisor_user)
+        response = self.client.post(reverse('placements:evaluation_create', args=[self.placement.pk]), {
+            'placement': self.placement.pk,
+            'evaluator': self.other_supervisor.pk,
+            'evaluation_date': '2026-06-10',
+            'score': '85',
+            'remarks': '',
+        })
+
+        evaluation = PlacementEvaluation.objects.get()
+        self.assertEqual(evaluation.evaluator, self.supervisor)
 
 
