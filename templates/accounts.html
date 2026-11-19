@@ -14,11 +14,9 @@
   <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %}">{{ message }}</div>
   {% endfor %}
 
-  <div class="alert alert-info">
-    <i class="fas fa-info-circle me-2"></i>
-    Roles also sync automatically from <strong>Students</strong>/<strong>Supervisors</strong> records by matching email.
-    If an account has a matching record, its role can be re-synced from there. Clearing a role here does not delete records.
-    Your own account and superuser accounts are read-only.
+  <div class="alert alert-info d-flex align-items-start">
+    <i class="fas fa-info-circle mt-1"></i>
+    <span>Use the buttons below to set a role, activate an account, or change staff access. Your own account and superuser accounts are protected.</span>
   </div>
 
   <form method="get" class="mb-3">

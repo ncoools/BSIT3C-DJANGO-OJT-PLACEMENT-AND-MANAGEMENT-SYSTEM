@@ -18,14 +18,15 @@
     <div class="col-lg-8">
       <div class="card">
         <div class="card-body p-4">
-          <div class="alert alert-info">
-            <i class="fas fa-shield-alt me-2"></i>
-            Create the account here and share the sign-in details with the supervisor through a secure channel.
+          <div class="alert alert-info d-flex align-items-start">
+            <i class="fas fa-shield-alt mt-1"></i>
+            <span>Create the account here, then share the sign-in details with the supervisor through a secure channel.</span>
           </div>
 
           {% if errors %}
-          <div class="alert alert-danger" role="alert">
-            <i class="fas fa-exclamation-circle me-2"></i> Please fix the errors below.
+          <div class="alert alert-danger d-flex align-items-start" role="alert">
+            <i class="fas fa-exclamation-circle mt-1"></i>
+            <span>Please correct the highlighted fields below.</span>
           </div>
           {% endif %}
 

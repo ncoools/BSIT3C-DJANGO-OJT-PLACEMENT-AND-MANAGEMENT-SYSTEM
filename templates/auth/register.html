@@ -64,19 +64,19 @@
       <div class="card-body p-4">
         <div class="text-center mb-4">
           <i class="fas fa-users dh-brand me-1" style="font-size: 32px;"></i>
-          <span class="dh-brand fw-bold fs-4">JIN Technologies</span>
+          <span class="dh-brand fw-bold fs-4">OJT TRACK</span>
         </div>
         <h2 class="h5 text-center mb-4">Create your account</h2>
 
-        <div class="alert alert-info" role="alert">
-          <i class="fas fa-info-circle me-2"></i>
-          Your <strong>Student Number</strong> is your password — you can change it after signing in.
+        <div class="alert alert-info d-flex align-items-start" role="alert">
+          <i class="fas fa-info-circle mt-1"></i>
+          <span>Your Student Number serves as your password. You may change it after signing in.</span>
         </div>
 
         {% if errors %}
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          <i class="fas fa-exclamation-circle me-2"></i>
-          Please fix the errors below.
+        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-start" role="alert">
+          <i class="fas fa-exclamation-circle mt-1"></i>
+          <span class="flex-fill">Please correct the highlighted fields below.</span>
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         {% endif %}
@@ -161,7 +161,7 @@
               <div class="invalid-feedback">{{ errors.student_number }}</div>
               {% endif %}
             </div>
-            <small class="text-secondary">This is your password when you sign in.</small>
+            <small class="text-secondary">This will be your password.</small>
           </div>
 
           <!-- Submit -->
@@ -177,6 +177,9 @@
     <div class="text-center text-secondary mt-3">
       Already have an account?
       <a href="{% url 'login' %}" class="text-primary fw-bold">Login</a>
+    </div>
+    <div class="text-center text-secondary mt-2" style="font-size: .8rem;">
+      Copyright &copy; 2026 JIN Technology. All rights reserved.
     </div>
   </div>
 

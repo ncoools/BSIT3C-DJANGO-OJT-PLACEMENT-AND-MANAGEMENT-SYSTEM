@@ -16,9 +16,9 @@
           <h3 class="mt-3">The supervisor can now sign in</h3>
           <p class="text-secondary mb-1">Email / username:</p>
           <p class="fw-bold fs-5">{{ created_user.email }}</p>
-          <div class="alert alert-warning text-start">
-            <i class="fas fa-shield-alt me-2"></i>
-            Share the sign-in credentials with the supervisor through a secure channel, and ask them to change their password after the first login.
+          <div class="alert alert-warning text-start d-flex align-items-start">
+            <i class="fas fa-shield-alt mt-1"></i>
+            <span>Share the sign-in credentials with the supervisor through a secure channel, and ask them to change their password after the first login.</span>
           </div>
           <a href="{% url 'accounts' %}" class="btn btn-primary mt-2"><i class="fas fa-arrow-left me-1"></i> Back to Accounts &amp; Roles</a>
         </div>
