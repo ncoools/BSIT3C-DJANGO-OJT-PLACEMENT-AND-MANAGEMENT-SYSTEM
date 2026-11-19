@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OJT Placement Report</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2cm;
+      @frame footer {
+        -pdf-frame-content: footerContent;
+        bottom: 1cm;
+        margin-left: 2cm;
+        margin-right: 2cm;
+      }
+    }
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 10pt;
+      color: #1A1A1A;
+    }
+    .header {
+      border-bottom: 3px solid #F1D900;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+    .brand {
+      font-size: 16pt;
+      font-weight: bold;
+      color: #141414;
+      letter-spacing: 0.5px;
+    }
+    .brand-sub {
+      font-size: 8pt;
+      color: #666666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    h1 {
+      font-size: 20pt;
+      margin: 4px 0 0 0;
+      color: #141414;
+    }
+    h2 {
+      font-size: 12pt;
+      margin: 18px 0 8px 0;
+      padding: 4px 0;
+      border-bottom: 1px solid #CCCCCC;
+      color: #141414;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    table {
+      width: 100%;
+      margin-bottom: 4px;
+    }
+    th {
+      background: #141414;
+      color: #FFFFFF;
+      font-weight: bold;
+      text-align: left;
+      padding: 6px 8px;
+      font-size: 9pt;
+    }
+    td {
+      border-bottom: 1px solid #E5E5E5;
+      padding: 6px 8px;
+      font-size: 9pt;
+    }
+    .info-table td:first-child {
+      font-weight: bold;
+      width: 35%;
+      color: #555555;
+    }
+    .stats {
+      width: 100%;
+      margin-top: 6px;
+    }
+    .stat {
+      border: 1px solid #DDDDDD;
+      border-radius: 6px;
+      padding: 10px;
+      text-align: center;
+      width: 25%;
+    }
+    .stat .n {
+      font-size: 22pt;
+      font-weight: bold;
+      color: #141414;
+    }
+    .stat .l {
+      font-size: 7pt;
+      text-transform: uppercase;
+      color: #666666;
+    }
+    .ok { color: #16a34a; font-weight: bold; }
+    .warn { color: #b45309; font-weight: bold; }
+    .bar {
+      background: #EEEEEE;
+      height: 14px;
+      border-radius: 4px;
+      margin: 6px 0;
+    }
+    .bar-fill {
+      background: #F1D900;
+      height: 14px;
+      border-radius: 4px;
+    }
+    .note {
+      font-size: 8pt;
+      color: #777777;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="brand">JIN TECHNOLOGIES</div>
+    <div class="brand-sub">CMaT · OJT Placement Management System</div>
+    <h1>OJT Placement Report</h1>
+  </div>
+
+  <h2>Student information</h2>
+  <table class="info-table">
+    <tr><td>Student number</td><td>{{ placement.student.student_number }}</td></tr>
+    <tr><td>Name</td><td>{{ placement.student.first_name }} {{ placement.student.last_name }}</td></tr>
+    <tr><td>Contact no.</td><td>{{ placement.student.contact_no|default:"—" }}</td></tr>
+    <tr><td>Age / Sex</td><td>{{ placement.student.age|default:"—" }} / {{ placement.student.sex|default:"—" }}</td></tr>
+  </table>
+
+  <h2>Placement details</h2>
+  <table class="info-table">
+    <tr><td>Company</td><td>{{ placement.company.company_name }}</td></tr>
+    <tr><td>Supervisor</td><td>{% if placement.supervisor %}{{ placement.supervisor.first_name }} {{ placement.supervisor.last_name }}{% else %}—{% endif %}</td></tr>
+    <tr><td>Start date</td><td>{{ placement.start_date|date:"F j, Y" }}</td></tr>
+    <tr><td>End date</td><td>{{ placement.end_date|date:"F j, Y" }}</td></tr>
+    <tr><td>Status</td><td>{{ placement.get_status_display }}</td></tr>
+    <tr><td>Required hours</td><td>{{ placement.required_hours }} hours</td></tr>
+  </table>
+
+  <h2>Hours summary</h2>
+  <table class="stats">
+    <tr>
+      <td class="stat"><div class="n">{{ total_hours }}</div><div class="l">Hours rendered</div></td>
+      <td class="stat"><div class="n">{{ verified_hours }}</div><div class="l">Hours verified</div></td>
+      <td class="stat"><div class="n">{{ placement.required_hours }}</div><div class="l">Required hours</div></td>
+      <td class="stat"><div class="n">{{ days_present }}</div><div class="l">Days present</div></td>
+    </tr>
+  </table>
+  {% widthratio verified_hours placement.required_hours 100 as pct %}
+  <div class="bar"><div class="bar-fill" style="width: {{ pct|default:0 }}%;"></div></div>
+  <div class="note">Verified hours count toward OJT completion. {{ verified_hours }} of {{ placement.required_hours }} required hours ({{ pct|default:0 }}%).</div>
+
+  <h2>Attendance ({{ attendance|length }} records)</h2>
+  <p class="note">Present: {{ days_present }} · Late: {{ days_late }} · Absent: {{ days_absent }}</p>
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Time in</th><th>Time out</th><th>Hours</th><th>Status</th><th>Verified</th></tr>
+    </thead>
+    <tbody>
+      {% for record in attendance %}
+      <tr>
+        <td>{{ record.attendance_date|date:"M j, Y" }}</td>
+        <td>{{ record.time_in|time:"H:i"|default:"—" }}</td>
+        <td>{{ record.time_out|time:"H:i"|default:"—" }}</td>
+        <td>{{ record.hours_rendered|default:"—" }}</td>
+        <td>{{ record.status }}</td>
+        <td>{% if record.verified %}Yes{% else %}No{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6">No attendance records.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Evaluations ({{ evaluations|length }})</h2>
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Evaluator</th><th>Score</th><th>Remarks</th></tr>
+    </thead>
+    <tbody>
+      {% for evaluation in evaluations %}
+      <tr>
+        <td>{{ evaluation.evaluation_date|date:"M j, Y" }}</td>
+        <td>{{ evaluation.evaluator.first_name }} {{ evaluation.evaluator.last_name }}</td>
+        <td>{{ evaluation.score|default:"—" }}</td>
+        <td>{{ evaluation.remarks|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">No evaluations recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Reports ({{ reports|length }})</h2>
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Type</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for report in reports %}
+      <tr>
+        <td>{{ report.report_date|date:"M j, Y" }}</td>
+        <td>{{ report.get_report_type_display }}</td>
+        <td>{{ report.get_status_display }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3">No reports recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p id="footerContent" class="note">Generated {{ generated_at|date:"F j, Y · g:i A" }} by OJT Placement Management System</p>
+
+</body>
+</html>

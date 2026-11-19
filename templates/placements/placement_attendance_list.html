@@ -19,6 +19,7 @@
       </div>
       <div class="col-auto">
         {% if not is_student %}<a class="btn btn-primary" href="{% url 'placements:attendance_create' placement.pk %}">Add attendance</a>{% endif %}
+        <a class="btn btn-outline-primary" href="{% url 'placements:pdf_report' placement.pk %}"><i class="fa fa-file-pdf-o"></i> PDF report</a>
         <a class="btn btn-outline-secondary" href="{% url 'placements:list' %}"><i class="fa fa-arrow-left"></i> Back</a>
       </div>
     </div>

@@ -39,6 +39,7 @@
             <td><div class="d-flex gap-2">
               <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:evaluation_list' placement.pk %}">Evaluations</a>
               <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:report_list' placement.pk %}">Reports</a>
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:pdf_report' placement.pk %}">PDF</a>
               <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:update' placement.pk %}">Edit</a>
               <form method="post" action="{% url 'placements:delete' placement.pk %}" onsubmit="return confirm('Delete this placement?');">
                 {% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Delete</button>

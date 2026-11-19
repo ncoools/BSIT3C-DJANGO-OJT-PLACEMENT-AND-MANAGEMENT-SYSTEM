@@ -1,5 +1,6 @@
 # CI/test-only dependencies.
-# Production adds: mysqlclient (MySQL), openpyxl (exports).
+# Production adds: mysqlclient (MySQL).
 Django==6.1.2
 pytest
 pytest-django
+xhtml2pdf==0.2.28

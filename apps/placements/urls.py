@@ -26,4 +26,5 @@ urlpatterns = [
     path('<int:pk>/attendance/<int:attendance_pk>/edit/', views.placement_attendance_update, name='attendance_update'),
     path('<int:pk>/attendance/<int:attendance_pk>/delete/', views.placement_attendance_delete, name='attendance_delete'),
     path('<int:pk>/attendance/<int:attendance_pk>/verify/', views.placement_attendance_verify, name='attendance_verify'),
+    path('<int:pk>/report.pdf', views.placement_pdf_report, name='pdf_report'),
 ]

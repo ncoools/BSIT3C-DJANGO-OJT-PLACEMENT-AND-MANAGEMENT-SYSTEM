@@ -3,3 +3,4 @@ mysqlclient==2.2.8
 openpyxl==3.1.5
 pytest
 pytest-django
+xhtml2pdf==0.2.28

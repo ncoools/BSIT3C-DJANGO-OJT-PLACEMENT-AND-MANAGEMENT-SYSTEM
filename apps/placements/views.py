@@ -3,8 +3,15 @@ from datetime import date, time
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import get_template
+from django.utils import timezone
 from django.views.decorators.http import require_POST
+
+from io import BytesIO
+
+from xhtml2pdf import pisa
 
 from .forms import (
     AttendanceForm,
@@ -501,3 +508,44 @@ def placement_attendance_verify(request, pk, attendance_pk):
     if from_url == 'supervisor_dashboard':
         return redirect('supervisor_dashboard')
     return redirect('placements:attendance_list', pk=placement.pk)
+
+
+# PDF REPORT
+def _render_pdf(template_name, context, filename):
+    template = get_template(template_name)
+    html = template.render(context)
+    result = BytesIO()
+    pdf = pisa.CreatePDF(BytesIO(html.encode('utf-8')), dest=result, encoding='utf-8')
+    if pdf.err:
+        return None
+    response = HttpResponse(result.getvalue(), content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required(login_url='login')
+def placement_pdf_report(request, pk):
+    placement = authz.get_placement_for_user(request, pk, manage=False)
+
+    attendance = list(placement.attendance_records.all().order_by('attendance_date'))
+    verified_hours = round(sum(float(r.hours_rendered or 0) for r in attendance if r.verified), 2)
+    total_hours = round(sum(float(r.hours_rendered or 0) for r in attendance), 2)
+
+    context = {
+        'placement': placement,
+        'attendance': attendance,
+        'evaluations': placement.evaluations.select_related('evaluator').order_by('-evaluation_date'),
+        'reports': placement.reports.all().order_by('-report_date'),
+        'verified_hours': verified_hours,
+        'total_hours': total_hours,
+        'days_present': sum(1 for r in attendance if r.status == Attendance.Status.PRESENT),
+        'days_absent': sum(1 for r in attendance if r.status == Attendance.Status.ABSENT),
+        'days_late': sum(1 for r in attendance if r.status == Attendance.Status.LATE),
+        'generated_at': timezone.now(),
+    }
+    filename = f'OJT_Placement_{placement.student.student_number}.pdf'
+    response = _render_pdf('placements/placement_pdf_report.html', context, filename)
+    if response is None:
+        messages.error(request, 'Could not generate the PDF report.')
+        return redirect('placements:list')
+    return response

@@ -270,3 +270,71 @@ class AttendanceIntegrityTests(TestCase):
         self.assertTrue(self.record.verified)
 
 
+class PdfReportTests(TestCase):
+    """PDF report generation."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.admin_user = User.objects.create_user(username='admin', password='test-password', email='admin@example.com')
+        self.supervisor_user = User.objects.create_user(username='sup', password='test-password', email='sup@example.com')
+        self.student_user = User.objects.create_user(username='stud', password='test-password', email='stud@example.com')
+
+        department = Department.objects.create(department_name='Information Technology')
+        self.company = Company.objects.create(company_name='North Star')
+        self.supervisor = Supervisor.objects.create(
+            first_name='Alex', last_name='Smith', supervisor_type=Supervisor.Type.COMPANY,
+            company=self.company,
+        )
+        self.student = Student.objects.create(
+            student_number='2026-001', first_name='Jamie', last_name='Doe',
+            email='stud@example.com',
+        )
+        self.placement = Placement.objects.create(
+            student=self.student, company=self.company, supervisor=self.supervisor,
+            start_date=date(2026, 6, 1), end_date=date(2026, 9, 1),
+            required_hours=500, status=Placement.Status.IN_PROGRESS,
+        )
+        Attendance.objects.create(
+            placement=self.placement, attendance_date=date(2026, 6, 1),
+            time_in=time(8, 0), time_out=time(17, 0), verified=True,
+        )
+
+    def test_admin_can_download_report(self):
+        self.client.force_login(self.admin_user)
+        response = self.client.get(reverse('placements:pdf_report', args=[self.placement.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get('Content-Type'), 'application/pdf')
+        self.assertTrue(response.content.startswith(b'%PDF'))
+        self.assertIn('attachment', response.get('Content-Disposition', ''))
+
+    def test_student_can_download_own_report(self):
+        self.client.force_login(self.student_user)
+        response = self.client.get(reverse('placements:pdf_report', args=[self.placement.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get('Content-Type'), 'application/pdf')
+
+    def test_supervisor_can_download_report(self):
+        self.client.force_login(self.supervisor_user)
+        response = self.client.get(reverse('placements:pdf_report', args=[self.placement.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.startswith(b'%PDF'))
+
+    def test_student_cannot_download_other_placements_report(self):
+        other_student = Student.objects.create(
+            student_number='2026-002', first_name='Jordan', last_name='Roe',
+            email='jordan@example.com',
+        )
+        other_placement = Placement.objects.create(
+            student=other_student, company=self.company, supervisor=self.supervisor,
+            start_date=date(2026, 6, 1), end_date=date(2026, 9, 1),
+            required_hours=500, status=Placement.Status.IN_PROGRESS,
+        )
+        self.client.force_login(self.student_user)
+        response = self.client.get(reverse('placements:pdf_report', args=[other_placement.pk]))
+
+        self.assertEqual(response.status_code, 403)
+
+
