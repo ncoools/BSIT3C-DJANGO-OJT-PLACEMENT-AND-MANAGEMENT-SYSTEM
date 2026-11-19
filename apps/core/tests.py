@@ -4,7 +4,6 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.companies.models import Company
-from apps.departments.models import Department
 from apps.placements.models import Placement
 from apps.students.models import Student
 from apps.supervisors.models import Supervisor

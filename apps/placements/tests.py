@@ -9,7 +9,6 @@ from django.test import RequestFactory
 from django.urls import reverse
 
 from apps.companies.models import Company
-from apps.departments.models import Department
 from apps.students.models import Student
 from apps.supervisors.models import Supervisor
 from .forms import PlacementForm
@@ -112,7 +111,6 @@ class PlacementPermissionTests(TestCase):
         self.other_supervisor_user = User.objects.create_user(username='sup2', password='test-password', email='sup2@example.com')
         self.student_user = User.objects.create_user(username='stud', password='test-password', email='stud@example.com')
 
-        department = Department.objects.create(department_name='Information Technology')
         self.company = Company.objects.create(company_name='North Star')
         self.supervisor = Supervisor.objects.create(
             first_name='Alex', last_name='Smith', supervisor_type=Supervisor.Type.COMPANY,
@@ -200,7 +198,6 @@ class AttendanceIntegrityTests(TestCase):
         self.supervisor_user = User.objects.create_user(username='sup', password='test-password', email='sup@example.com')
         self.student_user = User.objects.create_user(username='stud', password='test-password', email='stud@example.com')
 
-        department = Department.objects.create(department_name='Information Technology')
         self.company = Company.objects.create(company_name='North Star')
         self.supervisor = Supervisor.objects.create(
             first_name='Alex', last_name='Smith', supervisor_type=Supervisor.Type.COMPANY,
@@ -279,7 +276,6 @@ class PdfReportTests(TestCase):
         self.supervisor_user = User.objects.create_user(username='sup', password='test-password', email='sup@example.com')
         self.student_user = User.objects.create_user(username='stud', password='test-password', email='stud@example.com')
 
-        department = Department.objects.create(department_name='Information Technology')
         self.company = Company.objects.create(company_name='North Star')
         self.supervisor = Supervisor.objects.create(
             first_name='Alex', last_name='Smith', supervisor_type=Supervisor.Type.COMPANY,
@@ -346,7 +342,6 @@ class EvaluationAssignmentTests(TestCase):
         self.supervisor_user = User.objects.create_user(username='sup', password='test-password', email='sup@example.com')
         self.other_supervisor_user = User.objects.create_user(username='sup2', password='test-password', email='sup2@example.com')
 
-        department = Department.objects.create(department_name='Information Technology')
         self.company = Company.objects.create(company_name='North Star')
         self.supervisor = Supervisor.objects.create(
             first_name='Alex', last_name='Smith', supervisor_type=Supervisor.Type.COMPANY,

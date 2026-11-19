@@ -43,8 +43,8 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('student_records', '0007_remove_student_department'),
-        ('supervisors', '0002_remove_supervisor_department'),
+        ('student_records', '0001_initial'),
+        ('supervisors', '0001_initial'),
     ]
 
     operations = [
