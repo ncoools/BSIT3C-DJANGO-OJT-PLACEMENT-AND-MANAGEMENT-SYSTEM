@@ -13,6 +13,9 @@ from .forms import (
     ReportForm,
     RequirementForm,
 )
+from apps.students.models import Student
+from apps.supervisors.models import Supervisor
+
 from .models import (
     Attendance,
     OJTSchedule,
@@ -49,9 +52,28 @@ def placement_list(request):
 
 @login_required(login_url='login')
 def placement_create(request):
+    email = (request.user.email or '').strip()
+    supervisor = Supervisor.objects.filter(email__iexact=email).first() if email else None
+
     form = PlacementForm(request.POST or None)
+    if supervisor:
+        # Students already under a DIFFERENT supervisor cannot be added by this account
+        assigned_to_others = Placement.objects.exclude(
+            supervisor=supervisor
+        ).exclude(
+            supervisor__isnull=True
+        ).values_list('student_id', flat=True).distinct()
+        form.fields['student'].queryset = Student.objects.exclude(pk__in=assigned_to_others)
+        # Lock the supervisor field — this account IS the supervisor for its students
+        form.fields['supervisor'].initial = supervisor
+        form.fields['supervisor'].disabled = True
+        form.fields['supervisor'].help_text = 'Locked to your supervisor account.'
+
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        placement = form.save(commit=False)
+        if supervisor:
+            placement.supervisor = supervisor
+        placement.save()
         messages.success(request, 'Placement created successfully.')
         return redirect('placements:list')
     return render(request, 'placements/placement_form.html', {'form': form, 'title': 'Add placement'})
@@ -60,9 +82,26 @@ def placement_create(request):
 @login_required(login_url='login')
 def placement_update(request, pk):
     placement = get_object_or_404(Placement, pk=pk)
+    email = (request.user.email or '').strip()
+    supervisor = Supervisor.objects.filter(email__iexact=email).first() if email else None
+
     form = PlacementForm(request.POST or None, instance=placement)
+    if supervisor:
+        assigned_to_others = Placement.objects.exclude(
+            supervisor=supervisor
+        ).exclude(
+            supervisor__isnull=True
+        ).values_list('student_id', flat=True).distinct()
+        form.fields['student'].queryset = Student.objects.exclude(pk__in=assigned_to_others)
+        form.fields['supervisor'].initial = supervisor
+        form.fields['supervisor'].disabled = True
+        form.fields['supervisor'].help_text = 'Locked to your supervisor account.'
+
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        placement = form.save(commit=False)
+        if supervisor:
+            placement.supervisor = supervisor
+        placement.save()
         messages.success(request, 'Placement updated successfully.')
         return redirect('placements:list')
     return render(request, 'placements/placement_form.html', {
