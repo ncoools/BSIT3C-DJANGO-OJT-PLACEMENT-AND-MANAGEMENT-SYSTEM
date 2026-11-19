@@ -1,5 +1,38 @@
+# Byte-compiled / cached
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.log
+
+# Django
 db.sqlite3
+db.sqlite3-journal
+media/
 staticfiles/
+
+# Environment / secrets
 .env
+.env.*
+*.pem
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDEs / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Coverage / test artifacts
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
