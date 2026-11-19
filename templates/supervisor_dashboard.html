@@ -1,282 +1,370 @@
 {% extends "theme/base.html" %}
 {% load static %}
+
 {% block title %}Supervisor Dashboard{% endblock %}
 
 {% block extra_css %}
 <style>
-  .dh-supervisor {
-    --bg: #111312;
-    --card: #1B1F1C;
-    --ink: #F4F5EF;
-    --mute: #A7B0A7;
-    --line: #333B34;
-    --pri: #F1D900;
-    --pri-ink: #141414;
-    --ok: #4ade80;
-    --warn: #fbbf24;
-    --bad: #dc2626;
-    --info: #2563eb;
+  .sup {
+    --bg: #0f140f;
+    --panel: #161d16;
+    --card: #1b231b;
+    --line: #273127;
+    --text: #f1f4ee;
+    --mute: #8d998b;
+    --lime: var(--dh-gold, #F1D900);
+    --lime-ink: #10140a;
+    --green-bg: #1f3a27;
+    --green-tx: #8fe0a4;
+    --red-bg: #3a1f1f;
+    --red-tx: #f08a8a;
+    --grey-bg: #2a332a;
     background: var(--bg);
+    color: var(--text);
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    overflow: hidden;
   }
-  .dh-supervisor .wrap { padding: 26px 28px 40px; }
-  .dh-supervisor .head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
-  .dh-supervisor h1 { font-size: 26px; color: var(--ink); }
-  .dh-supervisor .sub { color: var(--mute); font-size: 14px; margin-top: 2px; }
-  .dh-supervisor .btns { display: flex; gap: 8px; flex-wrap: wrap; }
-  .dh-supervisor .btn { font: inherit; font-size: 14px; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); color: var(--ink); cursor: pointer; }
-  .dh-supervisor .btn.p { background: var(--pri); border-color: var(--pri); color: var(--pri-ink); }
-  .dh-supervisor .grid { display: grid; gap: 16px; }
-  .dh-supervisor .stats { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: 16px; }
-  .dh-supervisor .card { background: var(--card); border-radius: 14px; padding: 18px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); border: 1px solid var(--line); }
-  .dh-supervisor .stat .l { font-size: 13px; color: var(--mute); }
-  .dh-supervisor .stat .v { font-size: 30px; font-weight: 600; margin: 4px 0; color: var(--ink); }
-  .dh-supervisor .stat .d { font-size: 12px; color: var(--mute); }
-  .dh-supervisor .stat .d b { color: var(--ok); font-weight: 600; }
-  .dh-supervisor .stat .d b.w { color: var(--warn); }
-  .dh-supervisor .stat .ic { float: right; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: rgba(247, 195, 37, 0.14); }
-  .dh-supervisor .row { display: grid; grid-template-columns: repeat(12, 1fr); margin-bottom: 16px; }
-  .dh-supervisor .c7 { grid-column: span 7; }
-  .dh-supervisor .c5 { grid-column: span 5; }
-  .dh-supervisor .c12 { grid-column: span 12; }
-  .dh-supervisor h2 { font-size: 16px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; color: var(--ink); }
-  .dh-supervisor h2 a { font-size: 13px; color: var(--pri); font-weight: 500; text-decoration: none; }
-  .dh-supervisor .tw { overflow-x: auto; }
-  .dh-supervisor table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  .dh-supervisor th { text-align: left; font-weight: 500; color: var(--mute); font-size: 13px; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  .dh-supervisor td { padding: 11px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; color: var(--ink); }
-  .dh-supervisor tr:last-child td { border: 0; }
-  .dh-supervisor .pill { font-size: 12px; padding: 3px 10px; border-radius: 99px; font-weight: 500; }
-  .dh-supervisor .pill.ok { background: rgba(22, 163, 74, 0.18); color: #4ade80; }
-  .dh-supervisor .pill.wa { background: rgba(217, 119, 6, 0.18); color: #fbbf24; }
-  .dh-supervisor .pill.in { background: rgba(37, 99, 235, 0.18); color: #93c5fd; }
-  .dh-supervisor .pill.ba { background: rgba(220, 38, 38, 0.18); color: #f87171; }
-  .dh-supervisor .sub-note { font-size: 11px; font-weight: 400; color: var(--mute); margin-left: 10px; letter-spacing: 0.02em; }
-  .dh-supervisor .hours-summary { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; margin-bottom: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.03); }
-  .dh-supervisor .hours-stat { display: flex; flex-direction: column; gap: 2px; }
-  .dh-supervisor .hours-label { font-size: 11px; color: var(--mute); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
-  .dh-supervisor .hours-value { font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1; }
-  .dh-supervisor .hours-value.ok { color: var(--ok); }
-  .dh-supervisor .hours-value.warn { color: var(--warn); }
-  .dh-supervisor .hours-progress { position: relative; flex: 1; min-width: 180px; height: 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
-  .dh-supervisor .hours-progress-bar { height: 100%; background: var(--pri); border-radius: 99px; }
-  .dh-supervisor .hours-pct { font-size: 12px; color: var(--mute); width: 100%; }
-  .dh-supervisor .hero-banner { position: relative; overflow: hidden; border-radius: 14px; border: 1px solid var(--line); background: linear-gradient(120deg, #141414 0%, #1B1F1C 55%, #232723 100%); margin-bottom: 16px; min-height: 180px; display: flex; align-items: center; }
-  .dh-supervisor .hero-content { position: relative; z-index: 1; padding: 24px 28px; max-width: 60%; }
-  .dh-supervisor .hero-pretitle { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--pri); }
-  .dh-supervisor .hero-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin: 6px 0 2px; color: var(--ink); }
-  .dh-supervisor .hero-sub { color: var(--mute); font-size: 14px; }
-  .dh-supervisor .hero-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 5px 12px; border-radius: 99px; border: 1px solid rgba(241, 217, 0, 0.35); color: var(--pri); background: rgba(241, 217, 0, 0.08); font-size: 12px; font-weight: 600; }
-  .dh-supervisor .hero-image { position: absolute; right: 0; top: 0; bottom: 0; width: 45%; object-fit: cover; object-position: center; }
-  @media (max-width: 900px) { .dh-supervisor .hero-content { max-width: 100%; } .dh-supervisor .hero-image { display: none; } }
+  .sup .inner { padding: 24px 28px; }
+  .sup .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  .sup .crumb { font-size: 10px; color: var(--mute); letter-spacing: .08em; text-transform: uppercase; }
+  .sup h1 { font-size: 25px; margin: 8px 0 4px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .sup .head p { margin: 0; color: var(--mute); font-size: 13px; }
+  .sup .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .sup .btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); padding: 9px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; text-decoration: none; }
+  .sup .btn.pri { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
+  .sup .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+  .sup .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+  .sup .stat { padding: 14px 16px; position: relative; }
+  .sup .stat small { color: #c9d1c6; font-size: 11px; }
+  .sup .stat .n { font-size: 26px; font-weight: 600; margin: 6px 0 2px; color: var(--text); }
+  .sup .stat span { color: var(--mute); font-size: 10px; }
+  .sup .stat .ico { position: absolute; right: 14px; top: 14px; color: var(--mute); }
+  .sup .stat .ico.lime { color: var(--lime); }
+  .sup .main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  .sup .students { padding: 16px 0 0; }
+  .sup .pad { padding: 0 18px; }
+  .sup .top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .sup h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--text); }
+  .sup .sub { color: var(--mute); font-size: 11px; margin: 4px 0 14px; }
+  .sup .sec-note { color: var(--mute); font-size: 11px; }
+  .sup .filters { display: grid; grid-template-columns: 1fr 166px 142px; gap: 10px; margin-bottom: 14px; }
+  .sup .field { display: flex; align-items: center; gap: 8px; background: #121812; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; color: var(--mute); min-width: 0; }
+  .sup .field input { background: none; border: 0; outline: 0; width: 100%; color: var(--text); }
+  .sup .field input::placeholder { color: var(--mute); }
+  .sup .field select { background: none; border: 0; outline: 0; width: 100%; appearance: none; color: var(--text); }
+  .sup .field select option { background: #161d16; }
+  .sup .tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); padding: 0 18px; margin-bottom: 2px; }
+  .sup .tab { background: none; border: 0; padding: 8px 0; color: var(--mute); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; font-weight: 600; font-size: 12px; }
+  .sup .tab.on { color: var(--text); border-color: var(--lime); }
+  .sup .tab b { margin-left: 4px; font-weight: 600; }
+  .sup .tw { overflow-x: auto; }
+  .sup table { width: 100%; border-collapse: collapse; min-width: 620px; }
+  .sup th { font-weight: 500; color: var(--mute); font-size: 10px; text-align: left; padding: 10px 12px; background: #141b14; white-space: nowrap; }
+  .sup th:first-child, .sup td:first-child { padding-left: 18px; }
+  .sup td { padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 11px; white-space: nowrap; }
+  .sup tr.row { cursor: pointer; }
+  .sup tr.row.sel { background: #212c21; }
+  .sup tr.row.sel td:first-child { box-shadow: inset 3px 0 var(--lime); }
+  .sup td .id { display: block; color: var(--mute); font-size: 9px; margin-top: 2px; }
+  .sup td.nm { font-size: 12px; color: var(--text); }
+  .sup .pill { display: inline-block; padding: 4px 10px; border-radius: 5px; font-size: 10px; font-weight: 600; min-width: 84px; text-align: center; }
+  .sup .pill.on-duty { background: var(--green-bg); color: var(--green-tx); }
+  .sup .pill.completed { background: var(--grey-bg); color: #c9d1c6; }
+  .sup .pill.not-started { background: var(--grey-bg); color: #c9d1c6; }
+  .sup .pill.absent { background: var(--red-bg); color: var(--red-tx); }
+  .sup .mg { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 7px; border: 1px solid var(--line); background: #222b22; color: var(--text); cursor: pointer; font-size: 11px; font-weight: 600; }
+  .sup .mg.lime { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
+  .sup .foot { display: flex; justify-content: space-between; padding: 12px 18px; color: var(--mute); font-size: 10px; gap: 12px; flex-wrap: wrap; }
+  .sup .bottom { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-top: 16px; }
+  .sup .bottom .card { padding: 16px 18px; }
+  .sup .big { font-size: 19px; font-weight: 600; margin: 12px 0 4px; color: var(--text); }
+  .sup .bar { height: 5px; background: #2a332a; border-radius: 3px; margin: 14px 0 8px; overflow: hidden; }
+  .sup .bar i { display: block; height: 100%; background: var(--lime); border-radius: 3px; }
+  .sup .link { color: var(--lime); font-weight: 600; font-size: 12px; display: flex; justify-content: space-between; margin-top: 22px; text-decoration: none; align-items: center; gap: 8px; }
+  .sup .panel { padding: 18px; position: sticky; top: 16px; }
+  .sup .panel .ph { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .sup .panel hr { border: 0; border-top: 1px solid var(--line); margin: 12px 0 14px; }
+  .sup .who { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .sup .who b { font-size: 17px; font-weight: 600; color: var(--text); }
+  .sup .panel small.m { color: var(--mute); display: block; font-size: 10px; line-height: 1.7; }
+  .sup .shift { background: var(--green-bg); border-radius: 10px; padding: 14px; margin: 14px 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center; }
+  .sup .shift .ico { color: var(--lime); }
+  .sup .shift b { font-size: 22px; font-weight: 600; color: var(--text); grid-column: 2; }
+  .sup .shift small { grid-column: 2; color: #a9c9b1; font-size: 10px; justify-self: end; margin-top: -22px; }
+  .sup .shift .t { font-size: 11px; color: #d6e8da; }
+  .sup .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+  .sup label { display: block; font-size: 11px; color: #c9d1c6; margin-bottom: 6px; }
+  .sup .in { width: 100%; background: #121812; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .sup .in input, .sup .in select { background: none; border: 0; outline: 0; width: 100%;min-width: 0; color: var(--text); }
+  .sup .in select option { background: #161d16; }
+  .sup .actions { display: grid; grid-template-columns: 1fr 1.15fr; gap: 10px; margin-top: 14px; }
+  .sup .actions .btn { justify-content: center; padding: 11px; }
+  .sup .note { color: var(--mute); font-size: 10px; margin: 10px 0 0; }
+  .sup .empty { padding: 24px; text-align: center; color: var(--mute); font-size: 12px; }
+  @media (max-width: 1100px) { .sup .main { grid-template-columns: 1fr; } .sup .panel { position: static; } .sup .stats { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 760px) { .sup .filters, .sup .bottom { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="dh-supervisor">
-  <div class="wrap">
-    <div class="hero-banner">
-      <div class="hero-content">
-        <span class="hero-pretitle">Supervisor Portal</span>
-        <h1 class="hero-title">Supervisor Dashboard</h1>
-        <p class="hero-sub">{{ supervisor_name }}{% if supervisor.company %} · {{ supervisor.company.company_name }}{% endif %}</p>
-        <span class="hero-badge"><i class="fa fa-user-tie"></i> OJT Supervisor</span>
-      </div>
-      <img class="hero-image" src="{% static 'images/supervisor.png' %}" alt="Supervisor">
-    </div>
+<div class="sup">
+  <div class="inner">
 
     <div class="head">
       <div>
-        <h1>Supervisor Dashboard</h1>
-        <p>{{ supervisor_name }}{% if supervisor.company %} · {{ supervisor.company.company_name }}{% endif %}</p>
+        <div class="crumb">Workspace / Overview</div>
+        <h1>Supervisor dashboard</h1>
+        <p>Keep your students on track, from placement to clock-out.</p>
       </div>
       <div class="btns">
-        <a class="btn p" href="{% url 'placements:create' %}">+ New placement</a>
+        <button class="btn" type="button" onclick="window.print()"><i class="fa fa-file-export"></i>Export report</button>
+        <a class="btn pri" href="{% url 'placements:create' %}"><i class="fa fa-plus"></i>New placement</a>
       </div>
     </div>
 
-    <section class="grid stats">
-      <div class="card stat">
-        <span class="ic">🎓</span>
-        <div class="l">Total students</div>
-        <div class="v">{{ total_students }}</div>
-        <div class="d">Assigned to you</div>
-      </div>
-      <div class="card stat">
-        <span class="ic">💼</span>
-        <div class="l">Active students</div>
-        <div class="v">{{ active_students }}</div>
-        <div class="d">Currently on OJT</div>
-      </div>
-      <div class="card stat">
-        <span class="ic">✅</span>
-        <div class="l">Completed</div>
-        <div class="v">{{ completed_students }}</div>
-        <div class="d">Finished OJT</div>
-      </div>
-      <div class="card stat">
-        <span class="ic">📋</span>
-        <div class="l">Total placements</div>
-        <div class="v">{{ total_placements }}</div>
-        <div class="d">All time</div>
-      </div>
-      <div class="card stat">
-        <span class="ic">☰</span>
-        <div class="l">Evaluations</div>
-        <div class="v">{{ evaluations|length }}</div>
-        <div class="d">Conducted</div>
-      </div>
-    </section>
+    <div class="stats">
+      <div class="card stat"><small>Assigned students</small><div class="n">{{ assigned_students }}</div><span>Across your placements</span><i class="fa fa-users ico"></i></div>
+      <div class="card stat"><small>Clocked in now</small><div class="n">{{ clocked_in_now }}</div><span>Currently on duty</span><i class="fa fa-clock-o ico lime"></i></div>
+      <div class="card stat"><small>Completed today</small><div class="n">{{ completed_today }}</div><span>Attendance recorded</span><i class="fa fa-check ico"></i></div>
+      <div class="card stat"><small>Not clocked in</small><div class="n">{{ not_clocked_in }}</div><span>Needs attention</span><i class="fa fa-user-o ico"></i></div>
+    </div>
 
-    <section class="grid row">
-      <div class="card c7">
-        <h2>My Placements</h2>
-        <div class="tw">
-          <table>
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Company</th>
-                <th>Period</th>
-                <th>Hours</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for placement in placements %}
-              <tr>
-                <td>{{ placement.student }}</td>
-                <td>{{ placement.company.company_name }}</td>
-                <td>{{ placement.start_date }} → {{ placement.end_date }}</td>
-                <td>{{ placement.completed_hours }}/{{ placement.required_hours }}</td>
-                <td>
-                  <span class="pill {% if placement.status == 'in_progress' %}in{% elif placement.status == 'completed' %}ok{% elif placement.status == 'cancelled' %}ba{% else %}wa{% endif %}">
-                    {% if placement.status == 'in_progress' %}In progress{% elif placement.status == 'completed' %}Completed{% elif placement.status == 'cancelled' %}Cancelled{% else %}Planned{% endif %}
-                  </span>
-                </td>
-                <td>
-                  <div class="d-flex gap-2">
-                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:evaluation_list' placement.pk %}">Evaluations</a>
-                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:report_list' placement.pk %}">Reports</a>
-                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'placements:attendance_list' placement.pk %}">Attendance</a>
-                    <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:update' placement.pk %}">Edit</a>
-                    <form method="post" action="{% url 'placements:delete' placement.pk %}" onsubmit="return confirm('Delete this placement?');">
-                      {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6">No placements yet.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+    <div class="main">
+      <div class="left">
+        <section class="card students">
+          <div class="pad">
+            <div class="top"><h2>Your students</h2><span class="sec-note">{{ today|date:"j M Y" }}</span></div>
+            <div class="sub">View today's attendance and manage each student's hours.</div>
+            <div class="filters">
+              <label class="field" style="margin:0"><i class="fa fa-search ico"></i><input id="q" placeholder="Search by name or student ID" aria-label="Search students"></label>
+              <label class="field" style="margin:0"><i class="fa fa-building-o ico"></i>
+                <select id="co" aria-label="Company">
+                  <option value="">All companies</option>
+                  {% for company in placements|dictsort:"company.company_name" %}{% ifchanged company.company_name %}<option value="{{ company.company_name }}">{{ company.company_name }}</option>{% endifchanged %}{% endfor %}
+                </select>
+                <i class="fa fa-chevron-down ico" style="margin-left:auto"></i>
+              </label>
+              <label class="field" style="margin:0;color:var(--text)"><i class="fa fa-calendar ico"></i>{{ today|date:"l, j F" }}<i class="fa fa-chevron-down ico" style="margin-left:auto"></i></label>
+            </div>
+          </div>
+          <div class="tabs" id="tabs">
+            <button class="tab on" data-f="all" type="button">All students <b>{{ assigned_students }}</b></button>
+            <button class="tab" data-f="on-duty" type="button">On duty <b>{{ clocked_in_now }}</b></button>
+            <button class="tab" data-f="off" type="button">Not clocked in <b>{{ not_clocked_in }}</b></button>
+          </div>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr><th>Student</th><th>Company</th><th>Status</th><th>Time in</th><th>Time out</th><th>Hours</th><th>Attendance</th></tr>
+              </thead>
+              <tbody id="rows">
+                {% for row in today_rows %}
+                <tr class="row{% if forloop.first %} sel{% endif %}" data-k="{{ forloop.counter0 }}"
+                    data-name="{{ row.student.first_name }} {{ row.student.last_name }}"
+                    data-id="{{ row.student.student_number }}"
+                    data-program="{{ row.student.department.department_name }}"
+                    data-company="{{ row.company.company_name }}"
+                    data-status="{{ row.status }}"
+                    data-tin="{% if row.time_in %}{{ row.time_in|time:'H:i' }}{% endif %}"
+                    data-tout="{% if row.time_out %}{{ row.time_out|time:'H:i' }}{% endif %}"
+                    data-hours="{{ row.hours_display }}"
+                    data-placement-pk="{{ row.placement.pk }}"
+                    data-attendance-pk="{{ row.attendance_pk|default:'' }}"
+                    data-attendance-date="{{ row.attendance_date|date:'Y-m-d' }}">
+                  <td class="nm">{{ row.student.first_name }} {{ row.student.last_name }}<span class="id">{{ row.student.student_number }}</span></td>
+                  <td>{{ row.company.company_name }}</td>
+                  <td><span class="pill {{ row.status }}">{{ row.status|cut:"-"|title }}</span></td>
+                  <td>{% if row.time_in %}{{ row.time_in|time:"H:i" }}{% else %}—{% endif %}</td>
+                  <td>{% if row.time_out %}{{ row.time_out|time:"H:i" }}{% else %}—{% endif %}</td>
+                  <td>{{ row.hours_display }}</td>
+                  <td><button class="mg{% if forloop.first %} lime{% endif %}" type="button">Manage <i class="fa fa-arrow-right"></i></button></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="empty">No placements assigned to you yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="foot"><span id="count">Showing {{ assigned_students }} of {{ assigned_students }} students</span><span>Live hours include breaks until recorded.</span></div>
+        </section>
+
+        <div class="bottom">
+          <section class="card">
+            <h2>Placement progress</h2>
+            <div class="big">{{ total_placements }} active placement{{ total_placements|pluralize }}</div>
+            <span class="sub" style="margin:0">{{ consumed_hours }} of {{ required_hours }} required hours logged</span>
+            <div class="bar"><i style="width: {{ hours_pct }}%;"></i></div>
+            <span class="sub" style="margin:0">{{ hours_pct }}% of required hours completed</span>
+          </section>
+          <section class="card">
+            <h2>Evaluations</h2>
+            <div class="big">{{ evaluations|length }} conducted</div>
+            <span class="sub" style="margin:0">Student evaluations recorded by you.</span>
+            {% if first_placement_id %}
+            <a class="link" href="{% url 'placements:evaluation_list' first_placement_id %}">Review evaluations <i class="fa fa-arrow-right"></i></a>
+            {% endif %}
+          </section>
         </div>
       </div>
 
-      <div class="card c5">
-        <h2>Evaluations</h2>
-        <div class="tw">
-          <table>
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Company</th>
-                <th>Date</th>
-                <th>Score</th>
-                <th class="w-1">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for evaluation in evaluations %}
-              <tr>
-                <td>{{ evaluation.placement.student }}</td>
-                <td>{{ evaluation.placement.company.company_name }}</td>
-                <td>{{ evaluation.evaluation_date }}</td>
-                <td>{{ evaluation.score }}</td>
-                <td>
-                  <div class="d-flex gap-2">
-                    <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:evaluation_update' evaluation.placement.pk evaluation.pk %}">Edit</a>
-                    <form method="post" action="{% url 'placements:evaluation_delete' evaluation.placement.pk evaluation.pk %}" onsubmit="return confirm('Delete this evaluation?');">
-                      {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="5">No evaluations yet.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+      <aside class="card panel">
+        <div class="ph"><h2>Manage attendance</h2></div>
+        <small class="m" style="margin-top:6px">Selected student</small>
+        <hr>
+        <div class="who"><b id="pn">—</b><span class="pill not-started" id="ps">Not started</span></div>
+        <small class="m" id="pm" style="margin-top:6px">—</small>
+        <div class="field" style="margin:14px 0;color:var(--text)"><i class="fa fa-calendar ico"></i>{{ today|date:"l, j F Y" }}<i class="fa fa-chevron-down ico" style="margin-left:auto"></i></div>
+        <div class="shift"><i class="fa fa-clock-o ico"></i><span class="t">Current shift</span><b id="ph">—</b><small id="pdate">As of now</small></div>
 
-    <section class="grid row">
-      <div class="card c12">
-        <h2>Attendance <span class="sub-note">Accumulated from every day's time in–out</span></h2>
-        <div class="hours-summary">
-          <div class="hours-stat">
-            <span class="hours-label">Hours completed</span>
-            <span class="hours-value ok">{{ completed_hours }}</span>
+        <form id="panel-form" method="post" action="">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="supervisor_dashboard">
+          <input type="hidden" name="attendance_date" id="p-date" value="{{ today|date:'Y-m-d' }}">
+          <div class="two">
+            <div>
+              <label for="p-ti">Time in</label>
+              <div class="in"><input type="time" id="p-ti" name="time_in"><i class="fa fa-clock-o ico"></i></div>
+            </div>
+            <div>
+              <label for="p-to">Time out</label>
+              <div class="in"><input type="time" id="p-to" name="time_out"><i class="fa fa-clock-o ico"></i></div>
+            </div>
           </div>
-          <div class="hours-stat">
-            <span class="hours-label">Hours consumed</span>
-            <span class="hours-value warn">{{ consumed_hours }}</span>
+          <div style="margin-top:12px">
+            <label for="p-status">Status</label>
+            <div class="in"><select id="p-status" name="status">
+              <option value="Present">Present</option>
+              <option value="Late">Late</option>
+              <option value="Absent">Absent</option>
+              <option value="Excused">Excused</option>
+            </select><i class="fa fa-chevron-down ico"></i></div>
           </div>
-          <div class="hours-stat">
-            <span class="hours-label">Hours required</span>
-            <span class="hours-value">{{ required_hours }}</span>
+          <div class="actions">
+            <button type="submit" class="btn">Save changes</button>
+            <a class="btn pri" id="p-open" href="{% url 'placements:list' %}">Open page</a>
           </div>
-          <div class="hours-progress">
-            <div class="hours-progress-bar" style="width: {{ hours_pct }}%;"></div>
-          </div>
-          <div class="hours-pct">{{ hours_pct }}% of required hours consumed</div>
+        </form>
+
+        <div id="panel-empty" style="display:none; margin-top:14px;">
+          <p class="note">No attendance record for this student today.</p>
+          <a class="btn pri" id="p-add" href="{% url 'placements:list' %}" style="justify-content:center; width:100%;"><i class="fa fa-plus"></i>Add attendance record</a>
         </div>
-        <div class="tw">
-          <table>
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Company</th>
-                <th>Date</th>
-                <th>Time in</th>
-                <th>Time out</th>
-                <th>Hours</th>
-                <th>Required/Day</th>
-                <th>Status</th>
-                <th class="w-1">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for record in attendance_records %}
-              <tr>
-                <td>{{ record.placement.student }}</td>
-                <td>{{ record.placement.company.company_name }}</td>
-                <td>{{ record.attendance_date }}</td>
-                <td>{{ record.time_in|time:"H:i"|default:"—" }}</td>
-                <td>{{ record.time_out|time:"H:i"|default:"—" }}</td>
-                <td>{{ record.hours_rendered|default:"—" }}</td>
-                <td>{{ record.daily_required_hours }}</td>
-                <td><span class="pill ok">{{ record.status }}</span></td>
-                <td>
-                  <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:attendance_update' record.placement.pk record.pk %}">Edit</a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="9">No attendance records yet.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+
+        <p class="note">Hours are credited from time in → time out.<br>Every change is saved with your name and timestamp.</p>
+      </aside>
+    </div>
+
   </div>
 </div>
+
+<script>
+(function () {
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#rows tr.row'));
+  var q = document.getElementById('q');
+  var co = document.getElementById('co');
+  var tabs = document.getElementById('tabs');
+  var count = document.getElementById('count');
+  var panelForm = document.getElementById('panel-form');
+  var panelEmpty = document.getElementById('panel-empty');
+  var pn = document.getElementById('pn');
+  var ps = document.getElementById('ps');
+  var pm = document.getElementById('pm');
+  var ph = document.getElementById('ph');
+  var pdate = document.getElementById('pdate');
+  var pTi = document.getElementById('p-ti');
+  var pTo = document.getElementById('p-to');
+  var pStatus = document.getElementById('p-status');
+  var pDate = document.getElementById('p-date');
+  var pOpen = document.getElementById('p-open');
+  var pAdd = document.getElementById('p-add');
+  var sel = 0;
+  var filter = 'all';
+
+  function statusLabel(s) {
+    if (s === 'on-duty') return 'On duty';
+    if (s === 'completed') return 'Completed';
+    if (s === 'absent') return 'Absent';
+    return 'Not started';
+  }
+
+  function selectRow(index) {
+    sel = index;
+    rows.forEach(function (r, i) {
+      r.classList.toggle('sel', i === index);
+      var btn = r.querySelector('.mg');
+      if (btn) { btn.classList.toggle('lime', i === index); }
+    });
+    var row = rows[index];
+    if (!row) { return; }
+
+    var name = row.getAttribute('data-name') || '';
+    var id = row.getAttribute('data-id') || '';
+    var program = row.getAttribute('data-program') || '';
+    var company = row.getAttribute('data-company') || '';
+    var status = row.getAttribute('data-status') || 'not-started';
+    var attPk = row.getAttribute('data-attendance-pk') || '';
+    var placementPk = row.getAttribute('data-placement-pk') || '';
+    var attDate = row.getAttribute('data-attendance-date') || '';
+
+    pn.textContent = name;
+    ps.textContent = statusLabel(status);
+    ps.className = 'pill ' + status;
+    pm.innerHTML = id + ' · ' + program + '<br>' + company;
+    ph.textContent = row.getAttribute('data-hours') || '—';
+    pdate.textContent = 'As of now';
+    pTi.value = row.getAttribute('data-tin') || '';
+    pTo.value = row.getAttribute('data-tout') || '';
+    pStatus.value = status === 'absent' ? 'Absent' : 'Present';
+    pDate.value = attDate;
+
+    if (attPk) {
+      panelForm.style.display = 'block';
+      panelEmpty.style.display = 'none';
+      panelForm.action = '/placements/' + placementPk + '/attendance/' + attPk + '/edit/';
+      pOpen.href = '/placements/' + placementPk + '/attendance/';
+    } else {
+      panelForm.style.display = 'none';
+      panelEmpty.style.display = 'block';
+      if (pAdd) { pAdd.href = '/placements/' + placementPk + '/attendance/add/'; }
+    }
+  }
+
+  function applyFilter() {
+    var query = (q.value || '').trim().toLowerCase();
+    var company = co.value;
+    var visible = 0;
+    rows.forEach(function (row) {
+      var name = (row.getAttribute('data-name') || '').toLowerCase();
+      var id = (row.getAttribute('data-id') || '').toLowerCase();
+      var comp = row.getAttribute('data-company') || '';
+      var status = row.getAttribute('data-status') || '';
+      var matchSearch = !query || name.indexOf(query) !== -1 || id.indexOf(query) !== -1;
+      var matchCompany = !company || comp === company;
+      var matchTab = filter === 'all' || (filter === 'on-duty' && status === 'on-duty') || (filter === 'off' && (status === 'not-started' || status === 'absent'));
+      var show = matchSearch && matchCompany && matchTab;
+      row.style.display = show ? '' : 'none';
+      if (show) { visible++; }
+    });
+    count.textContent = 'Showing ' + visible + ' of ' + rows.length + ' students';
+  }
+
+  rows.forEach(function (row, index) {
+    row.addEventListener('click', function () { selectRow(index); });
+  });
+  if (q) { q.addEventListener('input', applyFilter); }
+  if (co) { co.addEventListener('change', applyFilter); }
+  if (tabs) {
+    tabs.addEventListener('click', function (e) {
+      var tab = e.target.closest('.tab');
+      if (!tab) { return; }
+      filter = tab.getAttribute('data-f');
+      tabs.querySelectorAll('.tab').forEach(function (t) { t.classList.toggle('on', t === tab); });
+      applyFilter();
+    });
+  }
+
+  if (rows.length) { selectRow(0); }
+})();
+</script>
 {% endblock %}

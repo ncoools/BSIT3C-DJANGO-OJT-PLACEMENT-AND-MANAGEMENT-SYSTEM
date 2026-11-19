@@ -324,6 +324,9 @@ def placement_attendance_update(request, pk, attendance_pk):
     if request.method == 'POST' and form.is_valid():
         attendance = form.save()  # hours_rendered auto-calculated on save
         messages.success(request, 'Attendance updated successfully.')
+        next_url = request.POST.get('next') or request.GET.get('next')
+        if next_url == 'supervisor_dashboard':
+            return redirect('supervisor_dashboard')
         return redirect('placements:attendance_list', pk=placement.pk)
     return render(request, 'placements/attendance_form.html', {
         'form': form,

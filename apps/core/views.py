@@ -497,6 +497,53 @@ def supervisor_dashboard(request):
     cancelled_placements = [p for p in placements if p.status == Placement.Status.CANCELLED]
     active_students = len({p.student_id for p in active_placements})
     completed_students = len({p.student_id for p in completed_placements})
+
+    # Today's attendance per student (design: Supervisor Portal table)
+    today = timezone.now().date()
+    today_records = {
+        record.placement_id: record
+        for record in Attendance.objects.filter(
+            placement__student__in={p.student for p in placements},
+            attendance_date=today,
+        )
+    }
+    today_rows = []
+    for p in placements:
+        if p.status == Placement.Status.CANCELLED:
+            continue
+        rec = today_records.get(p.pk)
+        if rec:
+            if rec.status == Attendance.Status.ABSENT:
+                status = 'absent'
+            elif rec.time_out:
+                status = 'completed'
+            elif rec.time_in:
+                status = 'on-duty'
+            else:
+                status = 'not-started'
+        else:
+            status = 'not-started'
+        if rec and rec.hours_rendered is not None:
+            hrs = float(rec.hours_rendered)
+            hours_display = f'{int(hrs)}h {round((hrs - int(hrs)) * 60):02d}m'
+        else:
+            hours_display = '—'
+        today_rows.append({
+            'placement': p,
+            'student': p.student,
+            'company': p.company,
+            'status': status,
+            'time_in': rec.time_in if rec else None,
+            'time_out': rec.time_out if rec else None,
+            'hours': rec.hours_rendered if rec else None,
+            'hours_display': hours_display,
+            'attendance_pk': rec.pk if rec else None,
+            'attendance_date': rec.attendance_date if rec else today,
+        })
+    assigned_students = len(today_rows)
+    clocked_in_now = sum(1 for r in today_rows if r['status'] == 'on-duty')
+    completed_today = sum(1 for r in today_rows if r['status'] == 'completed')
+    not_clocked_in = sum(1 for r in today_rows if r['status'] in ('not-started', 'absent'))
    
     context = {
         'supervisor': supervisor,
@@ -517,6 +564,13 @@ def supervisor_dashboard(request):
         'completed_hours': completed_hours,
         'required_hours': required_hours,
         'hours_pct': hours_pct,
+        'today': today,
+        'today_rows': today_rows,
+        'assigned_students': assigned_students,
+        'clocked_in_now': clocked_in_now,
+        'completed_today': completed_today,
+        'not_clocked_in': not_clocked_in,
+        'first_placement_id': placements[0].pk if placements else None,
     }
 
     return render(request, 'supervisor_dashboard.html', context)
