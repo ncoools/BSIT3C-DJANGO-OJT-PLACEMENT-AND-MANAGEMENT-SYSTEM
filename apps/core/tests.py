@@ -87,7 +87,9 @@ class RegistrationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(get_user_model().objects.filter(username='newstudent2').exists())
 
-    def test_register_supervisor_creates_pending_inactive_account(self):
+    def test_admin_can_create_active_supervisor_account(self):
+        admin = get_user_model().objects.create_user(username='admincreate', password='secret1234', is_staff=True)
+        self.client.force_login(admin)
         response = self.client.post(reverse('supervisor_register'), {
             'first_name': 'Sup',
             'last_name': 'Visor',
@@ -98,11 +100,30 @@ class RegistrationTests(TestCase):
         })
 
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'auth/supervisor_pending.html')
+        self.assertTemplateUsed(response, 'auth/supervisor_created.html')
         self.assertTrue(Supervisor.objects.filter(email__iexact='supnew@example.com').exists())
         user = get_user_model().objects.get(username='supnew@example.com')
-        self.assertFalse(user.is_active)
+        self.assertTrue(user.is_active)
         self.assertTrue(user.groups.filter(name='supervisor').exists())
+
+    def test_supervisor_register_is_admin_only(self):
+        student_user = get_user_model().objects.create_user(username='studGuest', password='secret1234', email='studguest@example.com')
+        Student.objects.create(student_number='GUEST-001', first_name='Guest', last_name='Student', email='studguest@example.com')
+        self.client.force_login(student_user)
+        response = self.client.get(reverse('supervisor_register'))
+        self.assertRedirects(response, reverse('student_dashboard'), fetch_redirect_response=False)
+
+    def test_anonymous_redirected_to_login_for_supervisor_register(self):
+        response = self.client.get(reverse('supervisor_register'))
+        self.assertRedirects(response, '/?next=/supervisor-register/', fetch_redirect_response=False)
+
+    def test_public_pages_do_not_link_supervisor_registration(self):
+        login_html = self.client.get(reverse('login')).content.decode()
+        register_html = self.client.get(reverse('register')).content.decode()
+        for html in (login_html, register_html):
+            self.assertNotIn('supervisor_register', html)
+            self.assertNotIn('Register as Supervisor', html)
+            self.assertNotIn('Supervisor Registration', html)
 
     def test_admin_can_approve_pending_supervisor(self):
         admin = get_user_model().objects.create_user(username='admin', password='secret1234', is_staff=True)

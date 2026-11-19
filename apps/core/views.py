@@ -639,11 +639,11 @@ def register_view(request):
     return redirect('dashboard')
 
 
+@login_required(login_url='login')
+@admin_required
 @require_http_methods(['GET', 'POST'])
 def supervisor_register_view(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-
+    # Supervisor accounts are created by an administrator from Accounts & Roles
     if request.method == 'GET':
         return render(request, 'auth/supervisor_register.html')
 
@@ -660,6 +660,7 @@ def supervisor_register_view(request):
     if errors:
         return render(request, 'auth/supervisor_register.html', {'errors': errors, 'form_data': form_data})
 
+    # An admin is creating this account, so it is active immediately (no pending approval needed)
     user = User.objects.create_user(
         username=form_data['email'].strip(),
         first_name=form_data['first_name'].strip(),
@@ -667,9 +668,6 @@ def supervisor_register_view(request):
         email=form_data['email'].strip(),
         password=form_data['password'],
     )
-    # Lockdown: supervisor accounts require admin approval before they can log in
-    user.is_active = False
-    user.save()
 
     Supervisor.objects.create(
         supervisor_type=form_data['supervisor_type'],
@@ -678,8 +676,8 @@ def supervisor_register_view(request):
         email=user.email,
     )
 
-    messages.info(request, 'Your supervisor account has been submitted for review. An administrator must approve it before you can sign in.')
-    return render(request, 'auth/supervisor_pending.html', {'email': user.email})
+    messages.success(request, f'Supervisor account for {user.email} created and ready to use.')
+    return render(request, 'auth/supervisor_created.html', {'created_user': user})
 
 
 @login_required(login_url='login')

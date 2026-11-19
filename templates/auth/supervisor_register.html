@@ -1,206 +1,108 @@
-{% load static %}
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-  <title>Register as Supervisor - OJT Placement Management System</title>
-  <link href="{% static 'css/tabler.css' %}" rel="stylesheet" />
-  <link href="{% static 'css/app-theme.css' %}" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <style>
-    @import url("https://rsms.me/inter/inter.css");
-    body {
-      background-color: var(--dh-bg);
-      color: var(--dh-ink);
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card {
-      background-color: var(--dh-card);
-      border: 1px solid var(--dh-line);
-    }
-    .form-control,
-    .form-select {
-      background-color: rgba(255, 255, 255, 0.06);
-      border-color: var(--dh-line);
-      color: var(--dh-ink);
-    }
-    .form-control::placeholder {
-      color: var(--dh-muted);
-    }
-    .form-label {
-      color: var(--dh-muted);
-      font-size: 0.85rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .btn-primary {
-      background-color: var(--dh-gold);
-      border-color: var(--dh-gold);
-      color: var(--dh-gold-ink);
-    }
-    .btn-primary:hover {
-      background-color: var(--dh-gold-hover);
-    }
-    .dh-brand {
-      color: var(--dh-gold);
-    }
-    .text-secondary {
-      color: var(--dh-muted) !important;
-    }
-    .text-primary {
-      color: var(--dh-gold) !important;
-    }
-  </style>
-</head>
-<body>
-  <div class="container container-tight">
-    <div class="card card-md">
-      <div class="card-body p-4">
-        <div class="text-center mb-4">
-          <i class="fas fa-user-tie dh-brand me-1" style="font-size: 32px;"></i>
-          <span class="dh-brand fw-bold fs-4">JIN Technologies</span>
-        </div>
-        <h2 class="h5 text-center mb-4">Register as Supervisor</h2>
-
-        {% if errors %}
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          <i class="fas fa-exclamation-circle me-2"></i>
-          Please fix the errors below.
-          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endif %}
-
-        <form method="POST" action="{% url 'supervisor_register' %}">
-          {% csrf_token %}
-
-          <!-- First Name & Last Name -->
-          <div class="row g-3 mb-3">
-            <div class="col-6">
-              <label class="form-label required">First Name</label>
-              <input
-                type="text"
-                name="first_name"
-                class="form-control {% if errors.first_name %}is-invalid{% endif %}"
-                placeholder=""
-                value="{{ form_data.first_name|default:'' }}">
-              {% if errors.first_name %}
-              <div class="invalid-feedback">{{ errors.first_name }}</div>
-              {% endif %}
-            </div>
-            <div class="col-6">
-              <label class="form-label required">Last Name</label>
-              <input
-                type="text"
-                name="last_name"
-                class="form-control {% if errors.last_name %}is-invalid{% endif %}"
-                placeholder=""
-                value="{{ form_data.last_name|default:'' }}">
-              {% if errors.last_name %}
-              <div class="invalid-feedback">{{ errors.last_name }}</div>
-              {% endif %}
-            </div>
-          </div>
-
-          <!-- Email -->
-          <div class="mb-3">
-            <label class="form-label required">Email</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="fas fa-envelope text-secondary"></i></span>
-              <input
-                type="email"
-                name="email"
-                class="form-control {% if errors.email %}is-invalid{% endif %}"
-                placeholder=""
-                value="{{ form_data.email|default:'' }}">
-              {% if errors.email %}
-              <div class="invalid-feedback">{{ errors.email }}</div>
-              {% endif %}
-            </div>
-          </div>
-
-          <!-- Supervisor Type -->
-          <div class="mb-3">
-            <label class="form-label required">Supervisor Type</label>
-            <select name="supervisor_type" class="form-select {% if errors.supervisor_type %}is-invalid{% endif %}">
-              <option value="Company" {% if form_data.supervisor_type == 'Company' %}selected{% endif %}>Company</option>
-              <option value="School" {% if form_data.supervisor_type == 'School' %}selected{% endif %}>School</option>
-            </select>
-            {% if errors.supervisor_type %}
-            <div class="invalid-feedback">{{ errors.supervisor_type }}</div>
-            {% endif %}
-          </div>
-
-          <!-- Password -->
-          <div class="mb-3">
-            <label class="form-label required">Password</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="fas fa-lock text-secondary"></i></span>
-              <input
-                type="password"
-                name="password"
-                id="password"
-                class="form-control {% if errors.password %}is-invalid{% endif %}"
-                placeholder="Min. 8 characters">
-              <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                <i class="fas fa-eye" id="eyeIcon"></i>
-              </button>
-              {% if errors.password %}
-              <div class="invalid-feedback">{{ errors.password }}</div>
-              {% endif %}
-            </div>
-          </div>
-
-          <!-- Confirm Password -->
-          <div class="mb-3">
-            <label class="form-label required">Confirm Password</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="fas fa-lock text-secondary"></i></span>
-              <input
-                type="password"
-                name="confirm_password"
-                id="confirm_password"
-                class="form-control {% if errors.confirm_password %}is-invalid{% endif %}"
-                placeholder="Repeat your password">
-              <button class="btn btn-outline-secondary" type="button" id="toggleConfirm">
-                <i class="fas fa-eye" id="eyeIconConfirm"></i>
-              </button>
-              {% if errors.confirm_password %}
-              <div class="invalid-feedback">{{ errors.confirm_password }}</div>
-              {% endif %}
-            </div>
-          </div>
-
-          <!-- Submit -->
-          <div class="form-footer">
-            <button type="submit" class="btn btn-primary w-100">
-              <i class="fas fa-user-plus me-2"></i>Create Supervisor Account
-            </button>
-          </div>
-
-        </form>
+{% extends "theme/base.html" %}
+{% block title %}Add Supervisor - OJT Placement Management System{% endblock %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none mb-3">
+    <div class="row align-items-center">
+      <div class="col">
+        <h2 class="page-title">Add Supervisor Account</h2>
+        <div class="text-secondary mt-1">Admin-only — this account will be active immediately.</div>
       </div>
-    </div>
-    <div class="text-center text-secondary mt-3">
-      Already have an account?
-      <a href="{% url 'login' %}" class="text-primary fw-bold">Login</a>
-      <span class="mx-2">·</span>
-      <a href="{% url 'register' %}" class="text-primary fw-bold">Student Registration</a>
+      <div class="col-auto">
+        <a href="{% url 'accounts' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i> Back to Accounts</a>
+      </div>
     </div>
   </div>
 
-  <script src="{% static 'js/tabler.js' %}" defer></script>
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-body p-4">
+          <div class="alert alert-info">
+            <i class="fas fa-shield-alt me-2"></i>
+            Create the account here and share the sign-in details with the supervisor through a secure channel.
+          </div>
 
-  <script>
-    document.getElementById('togglePassword').addEventListener('click', function() {
-      const input = document.getElementById('password');
-      const icon = document.getElementById('eyeIcon');
+          {% if errors %}
+          <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i> Please fix the errors below.
+          </div>
+          {% endif %}
+
+          <form method="post" action="{% url 'supervisor_register' %}">
+            {% csrf_token %}
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label required">First Name</label>
+                <input type="text" name="first_name" class="form-control {% if errors.first_name %}is-invalid{% endif %}" value="{{ form_data.first_name|default:'' }}">
+                {% if errors.first_name %}<div class="invalid-feedback">{{ errors.first_name }}</div>{% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label required">Last Name</label>
+                <input type="text" name="last_name" class="form-control {% if errors.last_name %}is-invalid{% endif %}" value="{{ form_data.last_name|default:'' }}">
+                {% if errors.last_name %}<div class="invalid-feedback">{{ errors.last_name }}</div>{% endif %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label required">Email (used as username)</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-envelope text-secondary"></i></span>
+                <input type="email" name="email" class="form-control {% if errors.email %}is-invalid{% endif %}" value="{{ form_data.email|default:'' }}">
+                {% if errors.email %}<div class="invalid-feedback">{{ errors.email }}</div>{% endif %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label required">Supervisor Type</label>
+              <select name="supervisor_type" class="form-select {% if errors.supervisor_type %}is-invalid{% endif %}">
+                <option value="Company" {% if form_data.supervisor_type == 'Company' %}selected{% endif %}>Company</option>
+                <option value="School" {% if form_data.supervisor_type == 'School' %}selected{% endif %}>School</option>
+              </select>
+              {% if errors.supervisor_type %}<div class="invalid-feedback">{{ errors.supervisor_type }}</div>{% endif %}
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label required">Password</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="fas fa-lock text-secondary"></i></span>
+                  <input type="password" name="password" id="password" class="form-control {% if errors.password %}is-invalid{% endif %}" placeholder="Min. 8 characters">
+                  <button class="btn btn-outline-secondary" type="button" id="togglePassword"><i class="fas fa-eye" id="eyeIcon"></i></button>
+                  {% if errors.password %}<div class="invalid-feedback">{{ errors.password }}</div>{% endif %}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label required">Confirm Password</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="fas fa-lock text-secondary"></i></span>
+                  <input type="password" name="confirm_password" id="confirm_password" class="form-control {% if errors.confirm_password %}is-invalid{% endif %}" placeholder="Repeat password">
+                  <button class="btn btn-outline-secondary" type="button" id="toggleConfirm"><i class="fas fa-eye" id="eyeIconConfirm"></i></button>
+                  {% if errors.confirm_password %}<div class="invalid-feedback">{{ errors.confirm_password }}</div>{% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="form-footer">
+              <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus me-2"></i>Create Supervisor Account</button>
+              <a href="{% url 'accounts' %}" class="btn btn-link text-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+  function bindToggle(buttonId, inputId, iconId) {
+    const button = document.getElementById(buttonId);
+    if (!button) return;
+    button.addEventListener('click', function () {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
       if (input.type === 'password') {
         input.type = 'text';
         icon.classList.replace('fa-eye', 'fa-eye-slash');
@@ -209,18 +111,8 @@
         icon.classList.replace('fa-eye-slash', 'fa-eye');
       }
     });
-
-    document.getElementById('toggleConfirm').addEventListener('click', function() {
-      const input = document.getElementById('confirm_password');
-      const icon = document.getElementById('eyeIconConfirm');
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.replace('fa-eye', 'fa-eye-slash');
-      } else {
-        input.type = 'password';
-        icon.classList.replace('fa-eye-slash', 'fa-eye');
-      }
-    });
-  </script>
-</body>
-</html>
+  }
+  bindToggle('togglePassword', 'password', 'eyeIcon');
+  bindToggle('toggleConfirm', 'confirm_password', 'eyeIconConfirm');
+</script>
+{% endblock %}
