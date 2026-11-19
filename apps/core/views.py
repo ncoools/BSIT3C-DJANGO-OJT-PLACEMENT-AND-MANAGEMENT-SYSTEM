@@ -338,6 +338,17 @@ def student_dashboard(request):
         .order_by('-attendance_date', '-placement__start_date')
     )
 
+    # Filter by date range (GET params from_date / to_date)
+    from_date = request.GET.get('from_date', '').strip()
+    to_date = request.GET.get('to_date', '').strip()
+    filtered = list(attendance_records)
+    if from_date:
+        filtered = [r for r in filtered if str(r.attendance_date) >= from_date]
+    if to_date:
+        filtered = [r for r in filtered if str(r.attendance_date) <= to_date]
+    accumulated_hours = round(sum(float(r.hours_rendered or 0) for r in filtered), 2)
+    accumulated_pct = round((accumulated_hours / required_hours * 100), 1) if required_hours else 0
+
     context = {
         'student': student,
         'student_name': f'{student.first_name} {student.last_name}'.strip(),
@@ -348,9 +359,13 @@ def student_dashboard(request):
         'cancelled_placements': [p for p in placements if p.status == Placement.Status.CANCELLED],
         'pending_requirements': pending_requirements,
         'evaluations': evaluations,
-        'attendance_records': attendance_records,
+        'attendance_records': filtered,
         'required_hours': required_hours,
         'completed_hours': completed_hours,
+        'accumulated_hours': accumulated_hours,
+        'accumulated_pct': accumulated_pct,
+        'from_date': from_date,
+        'to_date': to_date,
         'hours_pct': round((completed_hours / required_hours * 100), 1) if required_hours else 0,
     }
 

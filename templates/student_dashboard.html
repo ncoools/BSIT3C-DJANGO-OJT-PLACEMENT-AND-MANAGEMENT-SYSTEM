@@ -53,6 +53,18 @@
   .dh-student .hrs { display: flex; align-items: center; gap: 8px; }
   .dh-student .hrs div { width: 70px; height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 99px; overflow: hidden; }
   .dh-student .hrs div span { display: block; height: 100%; background: var(--pri); border-radius: 99px; }
+  .dh-student .sub-note { font-size: 11px; font-weight: 400; color: var(--mute); margin-left: 10px; letter-spacing: 0.02em; }
+  .dh-student .hours-summary { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; margin-bottom: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.03); }
+  .dh-student .hours-stat { display: flex; flex-direction: column; gap: 2px; }
+  .dh-student .hours-label { font-size: 11px; color: var(--mute); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+  .dh-student .hours-value { font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1; }
+  .dh-student .hours-value.ok { color: var(--ok); }
+  .dh-student .hours-value.warn { color: var(--warn); }
+  .dh-student .hours-progress { position: relative; flex: 1; min-width: 180px; height: 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+  .dh-student .hours-progress-bar { height: 100%; background: var(--pri); border-radius: 99px; }
+  .dh-student .hours-pct { font-size: 12px; color: var(--mute); width: 100%; }
+  .dh-student .filter-bar { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .dh-student .filter-bar input[type="date"] { max-width: 180px; background-color: rgba(255, 255, 255, 0.06); border-color: var(--line); color: var(--ink); }
 </style>
 {% endblock %}
 
@@ -164,7 +176,27 @@
 
     <section class="grid row">
       <div class="card c12">
-        <h2>Attendance</h2>
+        <h2>Attendance <span class="sub-note">Everyday hours accumulated to reach required hours</span></h2>
+        <div class="hours-summary">
+          <div class="hours-stat">
+            <span class="hours-label">Accumulated</span>
+            <span class="hours-value warn">{{ accumulated_hours }}</span>
+          </div>
+          <div class="hours-stat">
+            <span class="hours-label">Required</span>
+            <span class="hours-value">{{ required_hours }}</span>
+          </div>
+          <div class="hours-progress">
+            <div class="hours-progress-bar" style="width: {{ accumulated_pct }}%;"></div>
+          </div>
+          <div class="hours-pct">{{ accumulated_pct }}% of required hours reached</div>
+        </div>
+        <form method="get" class="filter-bar">
+          <input type="date" class="form-control" name="from_date" value="{{ from_date }}" aria-label="From date">
+          <input type="date" class="form-control" name="to_date" value="{{ to_date }}" aria-label="To date">
+          <button class="btn btn-outline-primary" type="submit">Filter</button>
+          {% if from_date or to_date %}<a class="btn btn-outline-secondary" href="{% url 'student_dashboard' %}">Clear</a>{% endif %}
+        </form>
         <div class="tw">
           <table>
             <thead>
