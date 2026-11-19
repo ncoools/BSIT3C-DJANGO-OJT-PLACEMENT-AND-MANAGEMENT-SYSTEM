@@ -145,6 +145,75 @@ class RegistrationTests(TestCase):
         self.assertRedirects(response, reverse('dashboard'), fetch_redirect_response=False)
 
 
+class AccountsViewTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_user(username='boss', password='secret1234', email='boss@example.com', is_staff=True)
+        self.target = User.objects.create_user(username='target', password='secret1234', email='target@example.com', first_name='Tar', last_name='Get')
+
+    def test_admin_can_set_student_role_and_creates_profile(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('account_action', args=[self.target.pk]), {'action': 'set_student'})
+
+        self.assertRedirects(response, reverse('accounts'), fetch_redirect_response=False)
+        self.assertTrue(self.target.groups.filter(name='student').exists())
+        self.assertFalse(self.target.groups.filter(name='supervisor').exists())
+        self.assertTrue(Student.objects.filter(email__iexact='target@example.com').exists())
+
+    def test_admin_can_set_supervisor_role_and_creates_profile(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('account_action', args=[self.target.pk]), {'action': 'set_supervisor'})
+
+        self.assertRedirects(response, reverse('accounts'), fetch_redirect_response=False)
+        self.assertTrue(self.target.groups.filter(name='supervisor').exists())
+        self.assertFalse(self.target.groups.filter(name='student').exists())
+        self.assertTrue(Supervisor.objects.filter(email__iexact='target@example.com').exists())
+
+    def test_admin_can_clear_role(self):
+        Group.objects.get_or_create(name='student')[0].user_set.add(self.target)
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('account_action', args=[self.target.pk]), {'action': 'clear_role'})
+
+        self.assertRedirects(response, reverse('accounts'), fetch_redirect_response=False)
+        self.assertFalse(self.target.groups.filter(name__in=['student', 'supervisor']).exists())
+
+    def test_admin_can_toggle_active(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('account_action', args=[self.target.pk]), {'action': 'toggle_active'})
+        self.assertRedirects(response, reverse('accounts'), fetch_redirect_response=False)
+        self.target.refresh_from_db()
+        self.assertFalse(self.target.is_active)
+
+    def test_admin_cannot_deactivate_self(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('account_action', args=[self.admin.pk]), {'action': 'toggle_active'})
+        self.assertRedirects(response, reverse('accounts'), fetch_redirect_response=False)
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.is_active)
+
+    def test_admin_cannot_modify_superuser(self):
+        User = get_user_model()
+        superuser = User.objects.create_superuser(username='root', password='secret1234', email='root@example.com')
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('account_action', args=[superuser.pk]), {'action': 'toggle_active'})
+        self.assertRedirects(response, reverse('accounts'), fetch_redirect_response=False)
+        superuser.refresh_from_db()
+        self.assertTrue(superuser.is_active)
+
+    def test_student_cannot_reach_accounts_page(self):
+        student_user = get_user_model().objects.create_user(username='plainstudent', password='secret1234', email='plainstudent@example.com')
+        Student.objects.create(student_number='ACC-100', first_name='Plain', last_name='Student', email='plainstudent@example.com')
+        self.client.force_login(student_user)
+        response = self.client.get(reverse('accounts'))
+        self.assertRedirects(response, reverse('student_dashboard'), fetch_redirect_response=False)
+
+    def test_accounts_page_lists_users_for_admin(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('accounts'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'target')
+
+
 class AdminModuleAccessTests(TestCase):
     def setUp(self):
         User = get_user_model()

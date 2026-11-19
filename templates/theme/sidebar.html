@@ -144,6 +144,19 @@
           </a>
         </li>
         {% endif %}
+
+        <li class="nav-item mb-1">
+          <a
+            class="nav-link {% if request.resolver_match.url_name == 'accounts' %}active{% endif %}"
+            href="{% url 'accounts' %}"
+            aria-current="{% if request.resolver_match.url_name == 'accounts' %}page{% else %}false{% endif %}"
+          >
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <i class="fa fa-users-cog"></i>
+            </span>
+            <span class="nav-link-title">Accounts &amp; Roles</span>
+          </a>
+        </li>
         {% endif %}
 
       </ul>

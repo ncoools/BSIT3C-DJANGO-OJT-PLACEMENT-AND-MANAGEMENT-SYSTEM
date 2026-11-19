@@ -1,0 +1,131 @@
+{% extends "theme/base.html" %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none mb-3">
+    <div class="row align-items-center">
+      <div class="col"><h2 class="page-title">Accounts &amp; Roles</h2></div>
+    </div>
+  </div>
+
+  {% for message in messages %}
+  <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %}">{{ message }}</div>
+  {% endfor %}
+
+  <div class="alert alert-info">
+    <i class="fas fa-info-circle me-2"></i>
+    Roles also sync automatically from <strong>Students</strong>/<strong>Supervisors</strong> records by matching email.
+    If an account has a matching record, its role can be re-synced from there. Clearing a role here does not delete records.
+    Your own account and superuser accounts are read-only.
+  </div>
+
+  <form method="get" class="mb-3">
+    <div class="input-group">
+      <span class="input-group-text"><i class="fas fa-search"></i></span>
+      <input type="text" name="q" class="form-control" placeholder="Search by name, username or email" value="{{ query }}">
+      <button class="btn btn-primary" type="submit">Search</button>
+      {% if query %}<a href="{% url 'accounts' %}" class="btn btn-outline-secondary">Clear</a>{% endif %}
+    </div>
+  </form>
+
+  <div class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-vcenter card-table">
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Staff</th>
+              <th>Last login</th>
+              <th class="w-1">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            <tr>
+              <td>
+                <div class="fw-semibold">{{ row.account.get_full_name|default:row.account.username }}</div>
+                <div class="text-secondary small">{{ row.account.username }}</div>
+              </td>
+              <td>{{ row.account.email|default:'—' }}</td>
+              <td>
+                {% if row.role == 'student' %}<span class="badge bg-blue text-blue-fg">Student</span>
+                {% elif row.role == 'supervisor' %}<span class="badge bg-green text-green-fg">Supervisor</span>
+                {% else %}<span class="badge bg-yellow text-yellow-fg">Admin</span>{% endif %}
+              </td>
+              <td>
+                {% if row.account.is_active %}
+                <span class="badge bg-green-lt text-green">Active</span>
+                {% else %}
+                <span class="badge bg-red-lt text-red">Inactive</span>
+                {% endif %}
+              </td>
+              <td>{{ row.account.is_staff|yesno:"Yes,No" }}</td>
+              <td class="text-secondary small">{{ row.account.last_login|date:"M j, Y H:i"|default:'Never' }}</td>
+              <td>
+                {% if row.account.is_superuser %}
+                <span class="text-secondary small">Read-only</span>
+                {% else %}
+                <div class="d-flex flex-wrap gap-1">
+                  <form method="post" action="{% url 'account_action' row.account.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="set_student">
+                    <button class="btn btn-sm btn-outline-primary" type="submit" title="Assign student role">Set Student</button>
+                  </form>
+                  <form method="post" action="{% url 'account_action' row.account.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="set_supervisor">
+                    <button class="btn btn-sm btn-outline-primary" type="submit" title="Assign supervisor role">Set Supervisor</button>
+                  </form>
+                  <form method="post" action="{% url 'account_action' row.account.pk %}" onsubmit="return confirm('Clear this account’s role?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="clear_role">
+                    <button class="btn btn-sm btn-outline-secondary" type="submit" title="Remove role (plain account)">Clear Role</button>
+                  </form>
+                  <form method="post" action="{% url 'account_action' row.account.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_active">
+                    <button class="btn btn-sm {% if row.account.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}" type="submit">
+                      {{ row.account.is_active|yesno:"Deactivate,Activate" }}
+                    </button>
+                  </form>
+                  <form method="post" action="{% url 'account_action' row.account.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_staff">
+                    <button class="btn btn-sm btn-outline-secondary" type="submit">{{ row.account.is_staff|yesno:"Revoke Staff,Make Staff" }}</button>
+                  </form>
+                </div>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-secondary p-5">No accounts found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if page.paginator.num_pages > 1 %}
+    <div class="card-footer">
+      <nav>
+        <ul class="pagination m-0">
+          <li class="page-item {% if not page.has_previous %}disabled{% endif %}">
+            <a class="page-link" href="?page=1{% if query %}&q={{ query|urlencode }}{% endif %}">«</a>
+          </li>
+          {% for num in page.paginator.page_range %}
+          <li class="page-item {% if page.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query|urlencode }}{% endif %}">{{ num }}</a>
+          </li>
+          {% endfor %}
+          <li class="page-item {% if not page.has_next %}disabled{% endif %}">
+            <a class="page-link" href="?page={{ page.paginator.num_pages }}{% if query %}&q={{ query|urlencode }}{% endif %}">»</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

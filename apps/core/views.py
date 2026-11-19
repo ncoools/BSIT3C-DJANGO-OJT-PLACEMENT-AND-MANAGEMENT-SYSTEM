@@ -5,14 +5,18 @@ from apps import authz
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.core.validators import validate_email
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, Q
 from django.db.models.functions import TruncMonth
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
+
+from apps.authz import admin_required
 
 from apps.companies.models import Company
 from apps.placements.models import Placement, PlacementRequirement, PlacementEvaluation, Attendance
@@ -717,3 +721,96 @@ def reject_supervisor(request, user_id):
     user.delete()
     messages.success(request, 'Supervisor application rejected and removed.')
     return redirect('approvals')
+@admin_required
+def accounts_view(request):
+    """Admin page to view accounts and set their role (student/supervisor/none)."""
+    query = request.GET.get('q', '').strip()
+    users = User.objects.prefetch_related('groups').order_by('-is_active', 'username')
+    if query:
+        users = users.filter(
+            Q(username__icontains=query)
+            | Q(first_name__icontains=query)
+            | Q(last_name__icontains=query)
+            | Q(email__icontains=query)
+        )
+    paginator = Paginator(users, 15)
+    page = paginator.get_page(request.GET.get('page'))
+    rows = []
+    for account in page.object_list:
+        groups = {group.name for group in account.groups.all()}
+        if 'student' in groups:
+            role = 'student'
+        elif 'supervisor' in groups:
+            role = 'supervisor'
+        else:
+            role = 'admin'
+        rows.append({'account': account, 'role': role})
+    return render(request, 'accounts.html', {
+        'rows': rows,
+        'page': page,
+        'query': query,
+    })
+
+
+def _unique_student_number():
+    from uuid import uuid4
+    while True:
+        candidate = f'OJT-{uuid4().hex[:6].upper()}'
+        if not Student.objects.filter(student_number=candidate).exists():
+            return candidate
+
+
+@admin_required
+@require_POST
+def account_action(request, user_id):
+    """Apply a role/status action to an account (admin only)."""
+    target = get_object_or_404(User, pk=user_id)
+    action = request.POST.get('action', '')
+
+    # Guard rails: never let an admin lock out themselves or break superusers
+    if target.pk == request.user.pk:
+        messages.error(request, 'You cannot change your own account here.')
+        return redirect('accounts')
+    if target.is_superuser:
+        messages.error(request, 'Superuser accounts cannot be modified here.')
+        return redirect('accounts')
+
+    student_group, _ = Group.objects.get_or_create(name='student')
+    supervisor_group, _ = Group.objects.get_or_create(name='supervisor')
+
+    if action == 'set_student':
+        target.groups.remove(supervisor_group)
+        target.groups.add(student_group)
+        if (target.email or '').strip() and not Student.objects.filter(email__iexact=target.email).exists():
+            Student.objects.create(
+                student_number=_unique_student_number(),
+                first_name=target.first_name or target.username,
+                last_name=target.last_name or '—',
+                email=target.email,
+            )
+        messages.success(request, f'{target.username} is now a student account.')
+    elif action == 'set_supervisor':
+        target.groups.remove(student_group)
+        target.groups.add(supervisor_group)
+        if (target.email or '').strip() and not Supervisor.objects.filter(email__iexact=target.email).exists():
+            Supervisor.objects.create(
+                supervisor_type=Supervisor.Type.COMPANY,
+                first_name=target.first_name or target.username,
+                last_name=target.last_name or '—',
+                email=target.email,
+            )
+        messages.success(request, f'{target.username} is now a supervisor account.')
+    elif action == 'clear_role':
+        target.groups.remove(student_group, supervisor_group)
+        messages.success(request, f'Role cleared for {target.username}.')
+    elif action == 'toggle_active':
+        target.is_active = not target.is_active
+        target.save(update_fields=['is_active'])
+        messages.success(request, f'{target.username} {"activated" if target.is_active else "deactivated"}.')
+    elif action == 'toggle_staff':
+        target.is_staff = not target.is_staff
+        target.save(update_fields=['is_staff'])
+        messages.success(request, f'{target.username} staff access {"granted" if target.is_staff else "revoked"}.')
+    else:
+        messages.error(request, 'Unknown action.')
+    return redirect('accounts')
