@@ -11,7 +11,7 @@ from django.db.models import Count
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.text import slugify
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.companies.models import Company
 from apps.departments.models import Department
@@ -370,6 +370,67 @@ def student_dashboard(request):
     }
 
     return render(request, 'student_dashboard.html', context)
+
+
+@login_required(login_url='login')
+@require_POST
+def student_time_in(request):
+    email = getattr(request.user, 'email', '') or ''
+    student = Student.objects.filter(email__iexact=email).first()
+    if not student:
+        return redirect('dashboard')
+
+    placement = student.placements.filter(status=Placement.Status.IN_PROGRESS).order_by('-start_date').first()
+    if not placement:
+        messages.error(request, 'No active placement found.')
+        return redirect('student_dashboard')
+
+    today = timezone.now().date()
+    now = timezone.localtime().time().replace(microsecond=0)
+    record, created = Attendance.objects.get_or_create(
+        placement=placement,
+        attendance_date=today,
+        defaults={'time_in': now, 'status': Attendance.Status.PRESENT},
+    )
+    if not created:
+        record.time_in = now
+        record.status = Attendance.Status.PRESENT
+        record.save()
+    messages.success(request, f'Time in recorded at {record.time_in.strftime("%H:%M")}.')
+    return redirect('student_dashboard')
+
+
+@login_required(login_url='login')
+@require_POST
+def student_time_out(request):
+    email = getattr(request.user, 'email', '') or ''
+    student = Student.objects.filter(email__iexact=email).first()
+    if not student:
+        return redirect('dashboard')
+
+    placement = student.placements.filter(status=Placement.Status.IN_PROGRESS).order_by('-start_date').first()
+    if not placement:
+        messages.error(request, 'No active placement found.')
+        return redirect('student_dashboard')
+
+    today = timezone.now().date()
+    now = timezone.localtime().time().replace(microsecond=0)
+    record = Attendance.objects.filter(placement=placement, attendance_date=today).first()
+    if not record:
+        record = Attendance.objects.create(
+            placement=placement,
+            attendance_date=today,
+            time_in=now,
+            time_out=now,
+            status=Attendance.Status.PRESENT,
+        )
+        messages.success(request, f'Time out recorded at {now.strftime("%H:%M")}. Hours auto-calculated.')
+        return redirect('student_dashboard')
+
+    record.time_out = now
+    record.save()  # hours_rendered auto-calculated in model save()
+    messages.success(request, f'Time out recorded at {now.strftime("%H:%M")}. Hours auto-calculated.')
+    return redirect('student_dashboard')
 
 
 @login_required(login_url='login')
