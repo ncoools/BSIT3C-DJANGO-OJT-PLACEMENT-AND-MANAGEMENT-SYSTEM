@@ -337,11 +337,19 @@ def supervisor_dashboard(request):
         .order_by('-evaluation_date')
     )
 
+    placement_ids = [p.pk for p in placements]
+    attendance_records = list(
+        Attendance.objects.filter(placement_id__in=placement_ids)
+        .select_related('placement__student', 'placement__company')
+        .order_by('-attendance_date')
+    )
+
     context = {
         'supervisor': supervisor,
         'supervisor_name': f'{supervisor.first_name} {supervisor.last_name}'.strip(),
         'placements': placements,
         'evaluations': evaluations,
+        'attendance_records': attendance_records,
         'active_placements': [p for p in placements if p.status == Placement.Status.IN_PROGRESS],
         'completed_placements': [p for p in placements if p.status == Placement.Status.COMPLETED],
     }
