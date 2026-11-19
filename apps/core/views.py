@@ -385,6 +385,19 @@ def supervisor_dashboard(request):
         .order_by('-attendance_date')
     )
 
+    # Accumulated (every day) attendance hours vs required hours
+    consumed_hours = sum(
+        float(record.hours_rendered or 0) for record in attendance_records
+    )
+    completed_hours = sum(
+        p.completed_hours or 0 for p in placements if p.status != Placement.Status.CANCELLED
+    )
+    required_hours = sum(
+        p.required_hours for p in placements if p.status != Placement.Status.CANCELLED
+    )
+    rendered_hours = consumed_hours
+    hours_pct = round((consumed_hours / required_hours * 100), 1) if required_hours else 0
+
     # Real-time student counts for this supervisor
     student_ids = {p.student_id for p in placements}
     total_students = len(student_ids)
@@ -409,6 +422,11 @@ def supervisor_dashboard(request):
         'active_students': active_students,
         'completed_students': completed_students,
         'total_placements': len(placements),
+        'rendered_hours': round(rendered_hours, 2),
+        'consumed_hours': round(consumed_hours, 2),
+        'completed_hours': completed_hours,
+        'required_hours': required_hours,
+        'hours_pct': hours_pct,
     }
 
     return render(request, 'supervisor_dashboard.html', context)

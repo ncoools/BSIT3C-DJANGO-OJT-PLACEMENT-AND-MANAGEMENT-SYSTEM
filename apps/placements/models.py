@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from datetime import date, datetime, timedelta
 from django.db import models
 
 from apps.companies.models import Company
@@ -86,6 +87,18 @@ class Attendance(models.Model):
 
     class Meta:
         db_table = 'attendance'
+
+    def save(self, *args, **kwargs):
+        if self.time_in and self.time_out:
+            start = datetime.combine(self.attendance_date or date.today(), self.time_in)
+            end = datetime.combine(self.attendance_date or date.today(), self.time_out)
+            if end < start:
+                # Overnight shift: time_out is on the next day
+                end += timedelta(days=1)
+            delta = end - start
+            total_hours = delta.total_seconds() / 3600
+            self.hours_rendered = round(total_hours, 2)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.placement} - {self.attendance_date}'
