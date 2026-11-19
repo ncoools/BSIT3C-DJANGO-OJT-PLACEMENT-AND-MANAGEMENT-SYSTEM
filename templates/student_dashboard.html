@@ -160,7 +160,7 @@
                 <th>Company</th>
                 <th>Evaluator</th>
                 <th>Date</th>
-                <th>Score</th>
+                <th>Rating</th>
               </tr>
             </thead>
             <tbody>
@@ -169,7 +169,7 @@
                 <td>{{ evaluation.placement.company.company_name }}</td>
                 <td>{{ evaluation.evaluator }}</td>
                 <td>{{ evaluation.evaluation_date }}</td>
-                <td>{{ evaluation.score }}</td>
+                <td><span class="pill {% if evaluation.rating == 'excellent' %}ok{% elif evaluation.rating == 'fair' %}wa{% elif evaluation.rating == 'poor' %}ba{% else %}in{% endif %}">{{ evaluation.get_rating_display|default:"—" }}</span></td>
               </tr>
               {% empty %}
               <tr>

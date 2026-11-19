@@ -144,10 +144,16 @@ class PlacementRequirement(models.Model):
 
 
 class PlacementEvaluation(models.Model):
+    class Rating(models.TextChoices):
+        EXCELLENT = 'excellent', 'Excellent'
+        GOOD = 'good', 'Good'
+        FAIR = 'fair', 'Fair'
+        POOR = 'poor', 'Poor'
+
     placement = models.ForeignKey(Placement, on_delete=models.PROTECT, related_name='evaluations')
     evaluator = models.ForeignKey(Supervisor, on_delete=models.PROTECT, related_name='evaluations')
     evaluation_date = models.DateField()
-    score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    rating = models.CharField(max_length=10, choices=Rating.choices, null=True, blank=True)
     remarks = models.TextField(blank=True, null=True)
 
     class Meta:

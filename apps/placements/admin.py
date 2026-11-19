@@ -39,8 +39,8 @@ class PlacementRequirementAdmin(admin.ModelAdmin):
 
 @admin.register(PlacementEvaluation)
 class PlacementEvaluationAdmin(admin.ModelAdmin):
-    list_display = ('placement', 'evaluator', 'evaluation_date', 'score')
-    list_filter = ('placement',)
+    list_display = ('placement', 'evaluator', 'evaluation_date', 'rating')
+    list_filter = ('rating', 'placement')
     search_fields = ('placement__student__student_number',)
 
 

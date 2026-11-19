@@ -372,7 +372,7 @@ class EvaluationAssignmentTests(TestCase):
             'placement': self.placement.pk,
             'evaluator': self.other_supervisor.pk,  # should be ignored, locked to self
             'evaluation_date': '2026-06-10',
-            'score': '85',
+            'rating': 'excellent',
             'remarks': 'Good',
         })
 
@@ -386,7 +386,7 @@ class EvaluationAssignmentTests(TestCase):
             'placement': self.placement.pk,
             'evaluator': self.other_supervisor.pk,
             'evaluation_date': '2026-06-10',
-            'score': '85',
+            'rating': 'good',
             'remarks': '',
         })
 

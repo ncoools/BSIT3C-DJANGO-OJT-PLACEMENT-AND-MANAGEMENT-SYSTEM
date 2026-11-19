@@ -37,7 +37,7 @@
             <tr>
               <th>Evaluator</th>
               <th>Date</th>
-              <th>Score</th>
+              <th>Rating</th>
               <th>Remarks</th>
               <th class="w-1">Actions</th>
             </tr>
@@ -47,7 +47,7 @@
             <tr>
               <td>{{ evaluation.evaluator.first_name }} {{ evaluation.evaluator.last_name }}</td>
               <td>{{ evaluation.evaluation_date|date:"M j, Y" }}</td>
-              <td><span class="dh-score-badge">{{ evaluation.score|default_if_none:"—" }}</span></td>
+              <td><span class="dh-rating-badge {{ evaluation.rating|default:'' }}">{{ evaluation.get_rating_display|default:"—" }}</span></td>
               <td>{{ evaluation.remarks|default_if_none:"—" }}</td>
               <td>
                 <div class="d-flex gap-2">
@@ -100,11 +100,8 @@
           {% with latest_evaluation=evaluations|first %}
           {% if latest_evaluation %}
           <div class="text-center mb-4">
-            <div class="dh-score-value">{{ latest_evaluation.score|default_if_none:"—" }}</div>
-            <div class="text-secondary small text-uppercase tracking-wide">Overall score</div>
-            <div class="progress dh-progress mt-3 mx-auto" style="max-width: 20rem;">
-              <div class="progress-bar" style="width: {{ latest_evaluation.score|default_if_none:"0" }}%;"></div>
-            </div>
+            <div class="dh-score-value"><span class="dh-rating-badge {{ latest_evaluation.rating|default:'' }}" style="font-size: 1.25rem; min-width: 7rem; padding: 0.5rem 1.5rem;">{{ latest_evaluation.get_rating_display|default:"—" }}</span></div>
+            <div class="text-secondary small text-uppercase tracking-wide mt-3">Overall rating</div>
           </div>
           <div class="dh-meta-row">
             <span class="dh-meta-label">Evaluator</span>

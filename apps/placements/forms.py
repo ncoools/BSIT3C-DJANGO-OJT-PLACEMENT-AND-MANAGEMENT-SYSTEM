@@ -60,12 +60,12 @@ class RequirementForm(forms.ModelForm):
 class EvaluationForm(forms.ModelForm):
     class Meta:
         model = PlacementEvaluation
-        fields = ['placement', 'evaluator', 'evaluation_date', 'score', 'remarks']
+        fields = ['placement', 'evaluator', 'evaluation_date', 'rating', 'remarks']
         widgets = {
             'placement': forms.Select(attrs={'class': 'form-select'}),
             'evaluator': forms.Select(attrs={'class': 'form-select'}),
             'evaluation_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'score': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'step': '0.01'}),
+            'rating': forms.Select(attrs={'class': 'form-select'}),
             'remarks': forms.Textarea(attrs={'class': 'form-control'}),
         }
 
