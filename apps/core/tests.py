@@ -66,15 +66,26 @@ class RegistrationTests(TestCase):
             'first_name': 'New',
             'last_name': 'Student',
             'email': 'new@example.com',
-            'password': 'secret-1234',
-            'confirm_password': 'secret-1234',
-            'student_number': '',
+            'student_number': '2026-100',
         })
 
         self.assertRedirects(response, reverse('dashboard'), fetch_redirect_response=False)
         self.assertTrue(Student.objects.filter(email__iexact='new@example.com').exists())
         user = get_user_model().objects.get(username='newstudent')
         self.assertTrue(user.groups.filter(name='student').exists())
+        self.assertTrue(user.check_password('2026-100'))
+
+    def test_register_student_requires_student_number(self):
+        response = self.client.post(reverse('register'), {
+            'username': 'newstudent2',
+            'first_name': 'New',
+            'last_name': 'Student',
+            'email': 'new2@example.com',
+            'student_number': '',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(get_user_model().objects.filter(username='newstudent2').exists())
 
     def test_register_supervisor_creates_pending_inactive_account(self):
         response = self.client.post(reverse('supervisor_register'), {

@@ -1,4 +1,3 @@
-import random
 from datetime import date, datetime, timedelta
 
 from apps import authz
@@ -61,14 +60,6 @@ def _set_lock_state(request):
     return int(LOCK_DURATION.total_seconds())
 
 
-def _generate_student_number():
-    base = 'OJT'
-    while True:
-        candidate = f"{base}-{random.randint(100, 9999)}"
-        if not Student.objects.filter(student_number=candidate).exists():
-            return candidate
-
-
 def _validate_registration_data(data):
     errors = {}
 
@@ -76,8 +67,6 @@ def _validate_registration_data(data):
     first_name = data.get('first_name', '').strip()
     last_name = data.get('last_name', '').strip()
     email = data.get('email', '').strip()
-    password = data.get('password', '')
-    confirm_password = data.get('confirm_password', '')
 
     if not username:
         errors['username'] = 'Username is required.'
@@ -101,22 +90,12 @@ def _validate_registration_data(data):
             if User.objects.filter(email=email).exists():
                 errors['email'] = 'Email already registered.'
 
-    if not password:
-        errors['password'] = 'Password is required.'
-    elif len(password) < 8:
-        errors['password'] = 'Password must be at least 8 characters.'
-    else:
-        try:
-            validate_password(password)
-        except ValidationError as exc:
-            errors['password'] = ' '.join(exc.messages)
-
-    if password != confirm_password:
-        errors['confirm_password'] = 'Passwords do not match.'
-
+    # Students sign in with their student number as the password
     student_number = data.get('student_number', '').strip()
 
-    if student_number and Student.objects.filter(student_number=student_number).exists():
+    if not student_number:
+        errors['student_number'] = 'Student number is required (it becomes your password).'
+    elif Student.objects.filter(student_number=student_number).exists():
         errors['student_number'] = 'Student number already taken.'
 
     return errors
@@ -628,8 +607,6 @@ def register_view(request):
         'first_name': request.POST.get('first_name', ''),
         'last_name': request.POST.get('last_name', ''),
         'email': request.POST.get('email', ''),
-        'password': request.POST.get('password', ''),
-        'confirm_password': request.POST.get('confirm_password', ''),
         'student_number': request.POST.get('student_number', ''),
     }
 
@@ -637,17 +614,16 @@ def register_view(request):
     if errors:
         return render(request, 'auth/register.html', {'errors': errors, 'form_data': form_data})
 
+    student_number = form_data['student_number'].strip()
+    # The student's password is their student number for a frictionless first login
     user = User.objects.create_user(
         username=form_data['username'].strip(),
         first_name=form_data['first_name'].strip(),
         last_name=form_data['last_name'].strip(),
         email=form_data['email'].strip(),
-        password=form_data['password'],
+        password=student_number,
     )
 
-    student_number = form_data.get('student_number', '').strip()
-    if not student_number:
-        student_number = _generate_student_number()
     Student.objects.create(
         student_number=student_number,
         first_name=user.first_name,
