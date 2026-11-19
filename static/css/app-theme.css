@@ -308,6 +308,15 @@ html {
   color: var(--dh-sidebar-text);
 }
 
+/* Consistent highlighted display brand across app pages */
+.dh-brand-highlight {
+  padding: 0 0.3rem;
+  border-radius: 0.25rem;
+  background: rgba(241, 217, 0, 0.14);
+  color: var(--dh-gold) !important;
+  font-weight: 800;
+}
+
 .dh-brand-sub {
   display: block;
   font-size: 11px;
