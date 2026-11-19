@@ -385,14 +385,30 @@ def supervisor_dashboard(request):
         .order_by('-attendance_date')
     )
 
+    # Real-time student counts for this supervisor
+    student_ids = {p.student_id for p in placements}
+    total_students = len(student_ids)
+    active_placements = [p for p in placements if p.status == Placement.Status.IN_PROGRESS]
+    completed_placements = [p for p in placements if p.status == Placement.Status.COMPLETED]
+    planned_placements = [p for p in placements if p.status == Placement.Status.PLANNED]
+    cancelled_placements = [p for p in placements if p.status == Placement.Status.CANCELLED]
+    active_students = len({p.student_id for p in active_placements})
+    completed_students = len({p.student_id for p in completed_placements})
+   
     context = {
         'supervisor': supervisor,
         'supervisor_name': f'{supervisor.first_name} {supervisor.last_name}'.strip(),
         'placements': placements,
         'evaluations': evaluations,
         'attendance_records': attendance_records,
-        'active_placements': [p for p in placements if p.status == Placement.Status.IN_PROGRESS],
-        'completed_placements': [p for p in placements if p.status == Placement.Status.COMPLETED],
+        'active_placements': active_placements,
+        'completed_placements': completed_placements,
+        'planned_placements': planned_placements,
+        'cancelled_placements': cancelled_placements,
+        'total_students': total_students,
+        'active_students': active_students,
+        'completed_students': completed_students,
+        'total_placements': len(placements),
     }
 
     return render(request, 'supervisor_dashboard.html', context)

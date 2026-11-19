@@ -68,16 +68,28 @@
 
     <section class="grid stats">
       <div class="card stat">
+        <span class="ic">🎓</span>
+        <div class="l">Total students</div>
+        <div class="v">{{ total_students }}</div>
+        <div class="d">Assigned to you</div>
+      </div>
+      <div class="card stat">
         <span class="ic">💼</span>
-        <div class="l">Active placements</div>
-        <div class="v">{{ active_placements|length }}</div>
+        <div class="l">Active students</div>
+        <div class="v">{{ active_students }}</div>
         <div class="d">Currently on OJT</div>
       </div>
       <div class="card stat">
         <span class="ic">✅</span>
         <div class="l">Completed</div>
-        <div class="v">{{ completed_placements|length }}</div>
+        <div class="v">{{ completed_students }}</div>
         <div class="d">Finished OJT</div>
+      </div>
+      <div class="card stat">
+        <span class="ic">📋</span>
+        <div class="l">Total placements</div>
+        <div class="v">{{ total_placements }}</div>
+        <div class="d">All time</div>
       </div>
       <div class="card stat">
         <span class="ic">☰</span>
