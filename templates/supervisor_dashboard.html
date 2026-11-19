@@ -66,15 +66,15 @@
   .sup th.c-center, .sup td.c-center { text-align: center; }
   .sup th.c-right, .sup td.c-right { text-align: right; }
   .sup th.c-first, .sup td.c-first { text-align: left; }
-  .sup tr.row { cursor: pointer; }
-  .sup tr.row.sel { background: #212c21; }
-  .sup tr.row.sel td:first-child { box-shadow: inset 3px 0 var(--lime); }
+  .sup tr.srow { cursor: pointer; }
+  .sup tr.srow.sel { background: #212c21; }
+  .sup tr.srow.sel td:first-child { box-shadow: inset 3px 0 var(--lime); }
   .sup td.nm { font-size: 12px; color: var(--text); }
   .sup .nm-name { display: block; line-height: 1.25; }
   .sup .id { display: block; color: var(--mute); font-size: 9px; margin-top: 3px; line-height: 1.2; }
   .sup .students-table { table-layout: fixed; min-width: 620px; }
   .sup .students-table td, .sup .students-table th { overflow: hidden; text-overflow: ellipsis; }
-  .sup tr.row td { height: 54px; vertical-align: middle; }
+  .sup tr.srow td { height: 54px; vertical-align: middle; }
   .sup .pill { display: inline-block; padding: 4px 10px; border-radius: 5px; font-size: 10px; font-weight: 600; min-width: 84px; text-align: center; }
   .sup .pill.on-duty { background: var(--green-bg); color: var(--green-tx); }
   .sup .pill.completed { background: var(--grey-bg); color: #c9d1c6; }
@@ -176,7 +176,7 @@
               </thead>
               <tbody id="rows">
                 {% for row in today_rows %}
-                <tr class="row{% if forloop.first %} sel{% endif %}" data-k="{{ forloop.counter0 }}"
+                <tr class="srow{% if forloop.first %} sel{% endif %}" data-k="{{ forloop.counter0 }}"
                     data-name="{{ row.student.first_name }} {{ row.student.last_name }}"
                     data-id="{{ row.student.student_number }}"
                     data-program="{{ row.student.department.department_name }}"
@@ -276,7 +276,7 @@
 
 <script>
 (function () {
-  var rows = Array.prototype.slice.call(document.querySelectorAll('#rows tr.row'));
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#rows tr.srow'));
   var q = document.getElementById('q');
   var co = document.getElementById('co');
   var tabs = document.getElementById('tabs');
