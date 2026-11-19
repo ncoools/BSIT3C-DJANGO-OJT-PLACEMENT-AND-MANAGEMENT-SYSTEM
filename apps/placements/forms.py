@@ -13,8 +13,6 @@ class PlacementForm(forms.ModelForm):
             'start_date',
             'end_date',
             'required_hours',
-            'completed_hours',
-            'status',
         ]
         widgets = {
             'student': forms.Select(attrs={'class': 'form-select'}),
@@ -23,9 +21,27 @@ class PlacementForm(forms.ModelForm):
             'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'required_hours': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
-            'completed_hours': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        company = cleaned.get('company')
+        supervisor = cleaned.get('supervisor')
+        student = cleaned.get('student')
+
+        if company and supervisor and supervisor.company_id != company.id:
+            self.add_error('supervisor', 'Select a supervisor assigned to the selected company.')
+
+        if student and supervisor:
+            assigned = set(
+                Placement.objects.filter(student=student)
+                .exclude(supervisor__isnull=True)
+                .values_list('supervisor_id', flat=True)
+            )
+            if assigned and supervisor.id not in assigned:
+                self.add_error('student', 'This student is assigned to a specific supervisor and cannot be re-assigned to a different supervisor.')
+
+        return cleaned
 
 
 class RequirementForm(forms.ModelForm):

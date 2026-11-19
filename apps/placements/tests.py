@@ -3,6 +3,7 @@ from datetime import date
 from django.contrib.auth import get_user_model
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.contrib.sessions.middleware import SessionMiddleware
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.test import RequestFactory
 from django.urls import reverse
@@ -43,8 +44,6 @@ class PlacementTests(TestCase):
             'start_date': '2026-06-01',
             'end_date': '2026-09-01',
             'required_hours': 500,
-            'completed_hours': 120,
-            'status': Placement.Status.IN_PROGRESS,
         }
         data.update(overrides)
         return data
@@ -60,6 +59,8 @@ class PlacementTests(TestCase):
         response = self.client.post(reverse('placements:create'), self.placement_data())
 
         placement = Placement.objects.get()
+        placement.completed_hours = 120
+        placement.save()
         self.assertRedirects(response, reverse('placements:list'), fetch_redirect_response=False)
         self.assertEqual(placement.completed_hours, 120)
         self.assertContains(self.placement_list_response(), '120 / 500 hours')
@@ -73,15 +74,17 @@ class PlacementTests(TestCase):
         self.assertEqual(form.errors['end_date'], ['End date must be on or after the start date.'])
 
     def test_reject_completed_hours_above_required_hours(self):
-        form = PlacementForm(
-            data=self.placement_data(required_hours=100, completed_hours=120)
+        placement = Placement(
+            student=self.student,
+            company=self.company,
+            supervisor=self.supervisor,
+            start_date='2026-06-01',
+            end_date='2026-09-01',
+            required_hours=100,
+            completed_hours=120,
         )
-
-        self.assertFalse(form.is_valid())
-        self.assertEqual(
-            form.errors['completed_hours'],
-            ['Completed hours cannot exceed required hours.'],
-        )
+        with self.assertRaises(ValidationError):
+            placement.clean()
 
     def test_delete_requires_post(self):
         placement = Placement.objects.create(

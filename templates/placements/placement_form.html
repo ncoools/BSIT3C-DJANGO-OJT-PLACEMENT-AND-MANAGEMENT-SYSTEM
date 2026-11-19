@@ -7,6 +7,8 @@
       <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
+        {{ company_supervisors|json_script:'company-supervisors' }}
+        {{ student_supervisor_map|json_script:'student-supervisors' }}
         <div class="d-flex gap-2">
           <button class="btn btn-primary" type="submit">Save placement</button>
           <a class="btn btn-outline-secondary" href="{% url 'placements:list' %}">Cancel</a>
@@ -15,4 +17,68 @@
     </div>
   </div>
 </div>
+<script>
+(function () {
+  var companySelect = document.querySelector('select[name="company"]');
+  var supervisorSelect = document.querySelector('select[name="supervisor"]');
+  var studentSelect = document.querySelector('select[name="student"]');
+  if (!companySelect || !supervisorSelect || !studentSelect) { return; }
+
+  var companyDataEl = document.getElementById('company-supervisors');
+  var studentDataEl = document.getElementById('student-supervisors');
+  var companyData = companyDataEl ? JSON.parse(companyDataEl.textContent) : {};
+  var studentData = studentDataEl ? JSON.parse(studentDataEl.textContent) : {};
+
+  var allSupervisorOptions = Array.prototype.slice.call(supervisorSelect.options).map(function (o) {
+    return { value: o.value, text: o.textContent };
+  });
+  var allStudentOptions = Array.prototype.slice.call(studentSelect.options).map(function (o) {
+    return { value: o.value, text: o.textContent };
+  });
+
+  function setOptions(select, options, current) {
+    select.innerHTML = '';
+    var placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = '---------';
+    select.appendChild(placeholder);
+    options.forEach(function (o) {
+      var opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = o.text;
+      if (String(o.value) === String(current)) { opt.selected = true; }
+      select.appendChild(opt);
+    });
+  }
+
+  function rebuildSupervisors() {
+    var companyId = companySelect.value;
+    var current = supervisorSelect.value;
+    var allowed = (companyId && companyData[companyId]) ? companyData[companyId] : [];
+    var filtered = allSupervisorOptions.filter(function (o) {
+      if (!o.value) { return false; }
+      return allowed.some(function (s) { return String(s.id) === String(o.value); });
+    });
+    setOptions(supervisorSelect, filtered, current);
+    rebuildStudents();
+  }
+
+  function rebuildStudents() {
+    var supId = supervisorSelect.value;
+    var current = studentSelect.value;
+    var filtered = allStudentOptions.filter(function (o) {
+      if (!o.value) { return false; }
+      var sups = studentData[o.value] || [];
+      if (sups.length === 0) { return true; } // unassigned students
+      return sups.map(String).indexOf(String(supId)) !== -1;
+    });
+    setOptions(studentSelect, filtered, current);
+  }
+
+  companySelect.addEventListener('change', rebuildSupervisors);
+  supervisorSelect.addEventListener('change', rebuildStudents);
+
+  rebuildSupervisors();
+})();
+</script>
 {% endblock %}

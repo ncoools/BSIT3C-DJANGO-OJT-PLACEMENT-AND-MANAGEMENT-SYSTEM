@@ -13,6 +13,7 @@ from .forms import (
     ReportForm,
     RequirementForm,
 )
+from apps.companies.models import Company
 from apps.students.models import Student
 from apps.supervisors.models import Supervisor
 
@@ -24,6 +25,29 @@ from .models import (
     PlacementReport,
     PlacementRequirement,
 )
+
+
+def _student_supervisor_map():
+    """Map student pk -> list of supervisor pks they are assigned to (via placements)."""
+    mapping = {}
+    for student_id, supervisor_id in Placement.objects.exclude(
+        supervisor__isnull=True
+    ).values_list('student_id', 'supervisor_id').distinct():
+        mapping.setdefault(str(student_id), []).append(str(supervisor_id))
+    return mapping
+
+
+def _company_supervisor_map():
+    """Map company pk -> list of supervisors (id/label) assigned to that company."""
+    mapping = {}
+    for sup in Supervisor.objects.select_related('company').all():
+        if not sup.company_id:
+            continue
+        mapping.setdefault(str(sup.company_id), []).append({
+            'id': str(sup.pk),
+            'label': f'{sup.first_name} {sup.last_name}',
+        })
+    return mapping
 
 
 @login_required(login_url='login')
@@ -76,7 +100,12 @@ def placement_create(request):
         placement.save()
         messages.success(request, 'Placement created successfully.')
         return redirect('placements:list')
-    return render(request, 'placements/placement_form.html', {'form': form, 'title': 'Add placement'})
+    return render(request, 'placements/placement_form.html', {
+        'form': form,
+        'title': 'Add placement',
+        'company_supervisors': _company_supervisor_map(),
+        'student_supervisor_map': _student_supervisor_map(),
+    })
 
 
 @login_required(login_url='login')
@@ -108,6 +137,8 @@ def placement_update(request, pk):
         'form': form,
         'title': 'Edit placement',
         'placement': placement,
+        'company_supervisors': _company_supervisor_map(),
+        'student_supervisor_map': _student_supervisor_map(),
     })
 
 
