@@ -1,5 +1,5 @@
 {% extends "theme/base.html" %}
-
+{% load static %}
 {% block title %}Supervisor Dashboard{% endblock %}
 
 {% block extra_css %}
@@ -60,12 +60,30 @@
   .dh-supervisor .hours-progress { position: relative; flex: 1; min-width: 180px; height: 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
   .dh-supervisor .hours-progress-bar { height: 100%; background: var(--pri); border-radius: 99px; }
   .dh-supervisor .hours-pct { font-size: 12px; color: var(--mute); width: 100%; }
+  .dh-supervisor .hero-banner { position: relative; overflow: hidden; border-radius: 14px; border: 1px solid var(--line); background: linear-gradient(120deg, #141414 0%, #1B1F1C 55%, #232723 100%); margin-bottom: 16px; min-height: 180px; display: flex; align-items: center; }
+  .dh-supervisor .hero-content { position: relative; z-index: 1; padding: 24px 28px; max-width: 60%; }
+  .dh-supervisor .hero-pretitle { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--pri); }
+  .dh-supervisor .hero-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin: 6px 0 2px; color: var(--ink); }
+  .dh-supervisor .hero-sub { color: var(--mute); font-size: 14px; }
+  .dh-supervisor .hero-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 5px 12px; border-radius: 99px; border: 1px solid rgba(241, 217, 0, 0.35); color: var(--pri); background: rgba(241, 217, 0, 0.08); font-size: 12px; font-weight: 600; }
+  .dh-supervisor .hero-image { position: absolute; right: 0; top: 0; bottom: 0; width: 45%; object-fit: cover; object-position: center; }
+  @media (max-width: 900px) { .dh-supervisor .hero-content { max-width: 100%; } .dh-supervisor .hero-image { display: none; } }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="dh-supervisor">
   <div class="wrap">
+    <div class="hero-banner">
+      <div class="hero-content">
+        <span class="hero-pretitle">Supervisor Portal</span>
+        <h1 class="hero-title">Supervisor Dashboard</h1>
+        <p class="hero-sub">{{ supervisor_name }}{% if supervisor.company %} · {{ supervisor.company.company_name }}{% endif %}</p>
+        <span class="hero-badge"><i class="fa fa-user-tie"></i> OJT Supervisor</span>
+      </div>
+      <img class="hero-image" src="{% static 'images/supervisor.png' %}" alt="Supervisor">
+    </div>
+
     <div class="head">
       <div>
         <h1>Supervisor Dashboard</h1>
