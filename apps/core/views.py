@@ -326,8 +326,10 @@ def student_dashboard(request):
         filtered = [r for r in filtered if str(r.attendance_date) >= from_date]
     if to_date:
         filtered = [r for r in filtered if str(r.attendance_date) <= to_date]
-    accumulated_hours = round(sum(float(r.hours_rendered or 0) for r in filtered), 2)
+    # Only supervisor-verified hours count toward OJT completion
+    accumulated_hours = round(sum(float(r.hours_rendered or 0) for r in filtered if r.verified), 2)
     accumulated_pct = round((accumulated_hours / required_hours * 100), 1) if required_hours else 0
+    pending_verification = sum(1 for r in attendance_records if not r.verified)
 
     context = {
         'student': student,
@@ -344,6 +346,7 @@ def student_dashboard(request):
         'completed_hours': completed_hours,
         'accumulated_hours': accumulated_hours,
         'accumulated_pct': accumulated_pct,
+        'pending_verification': pending_verification,
         'from_date': from_date,
         'to_date': to_date,
         'hours_pct': round((completed_hours / required_hours * 100), 1) if required_hours else 0,
@@ -456,9 +459,9 @@ def supervisor_dashboard(request):
         weekday = weekday_map.get(record.attendance_date.weekday(), 'Mon')
         record.daily_required_hours = schedule_hours.get((record.placement_id, weekday), 8)
 
-    # Accumulated (every day) attendance hours vs required hours
+    # Accumulated (every day) attendance hours vs required hours — verified only counts
     consumed_hours = sum(
-        float(record.hours_rendered or 0) for record in attendance_records
+        float(record.hours_rendered or 0) for record in attendance_records if record.verified
     )
     completed_hours = sum(
         p.completed_hours or 0 for p in placements if p.status != Placement.Status.CANCELLED

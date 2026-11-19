@@ -1,5 +1,7 @@
 from django.core.exceptions import ValidationError
 from datetime import date, datetime, timedelta
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.companies.models import Company
@@ -84,6 +86,7 @@ class Attendance(models.Model):
     time_out = models.TimeField(null=True, blank=True)
     hours_rendered = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
     status = models.CharField(max_length=7, choices=Status.choices, default=Status.PRESENT)
+    verified = models.BooleanField(default=False, help_text='Supervisor has verified this record. Only verified hours count toward OJT completion.')
 
     class Meta:
         db_table = 'attendance'
@@ -102,6 +105,21 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f'{self.placement} - {self.attendance_date}'
+
+
+class AttendanceEditLog(models.Model):
+    attendance = models.ForeignKey(Attendance, on_delete=models.SET_NULL, null=True, blank=True, related_name='edit_logs')
+    editor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='attendance_edit_logs')
+    reason = models.TextField()
+    changes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'attendance_edit_logs'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Edit by {self.editor} on {self.created_at:%Y-%m-%d %H:%M}'
 
 
 class PlacementRequirement(models.Model):

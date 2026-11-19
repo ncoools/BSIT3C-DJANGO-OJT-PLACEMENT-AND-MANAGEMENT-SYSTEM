@@ -33,8 +33,12 @@
     <div class="card-body">
       <div class="d-flex flex-wrap gap-4 align-items-center">
         <div>
-          <div class="text-secondary small text-uppercase">Accumulated</div>
+          <div class="text-secondary small text-uppercase">Verified hours</div>
           <div class="h3 mb-0 text-warning">{{ rendered_hours }}</div>
+        </div>
+        <div>
+          <div class="text-secondary small text-uppercase">Verified records</div>
+          <div class="h3 mb-0">{{ verified_count }} / {{ attendance_records|length }}</div>
         </div>
         <div>
           <div class="text-secondary small text-uppercase">Required</div>
@@ -44,7 +48,7 @@
           <div class="progress" style="height:10px;">
             <div class="progress-bar" role="progressbar" style="width: {{ hours_pct }}%;" aria-valuenow="{{ hours_pct }}" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
-          <div class="text-secondary small mt-1">{{ hours_pct }}% of required hours reached</div>
+          <div class="text-secondary small mt-1">{{ hours_pct }}% of required hours reached (verified only)</div>
         </div>
       </div>
     </div>
@@ -65,7 +69,7 @@
     <div class="table-responsive">
       <table class="table table-vcenter card-table">
         <thead>
-          <tr><th>Date</th><th>Time in</th><th>Time out</th><th>Hours</th><th>Status</th>{% if not is_student %}<th class="w-1">Actions</th>{% endif %}</tr>
+          <tr><th>Date</th><th>Time in</th><th>Time out</th><th>Hours</th><th>Status</th><th>Verified</th>{% if not is_student %}<th class="w-1">Actions</th>{% endif %}</tr>
         </thead>
         <tbody>
           {% for record in attendance_records %}
@@ -77,10 +81,16 @@
             <td>
               <span class="pill {% if record.status == 'Present' %}ok{% elif record.status == 'Late' %}wa{% elif record.status == 'Absent' %}ba{% else %}in{% endif %}">{{ record.status }}</span>
             </td>
+            <td>{% if record.verified %}<span class="pill ok">✓ Verified</span>{% else %}<span class="pill wa">Pending</span>{% endif %}</td>
             {% if not is_student %}
             <td>
               <div class="d-flex gap-2">
                 <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:attendance_update' placement.pk record.pk %}">Edit</a>
+                {% if not record.verified %}
+                <form method="post" action="{% url 'placements:attendance_verify' placement.pk record.pk %}" onsubmit="return confirm('Verify this attendance record?');">
+                  {% csrf_token %}<button class="btn btn-sm btn-outline-success" type="submit">Verify</button>
+                </form>
+                {% endif %}
                 <form method="post" action="{% url 'placements:attendance_delete' placement.pk record.pk %}" onsubmit="return confirm('Delete this attendance record?');">
                   {% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Delete</button>
                 </form>
@@ -89,7 +99,7 @@
             {% endif %}
           </tr>
           {% empty %}
-          <tr><td colspan="6" class="text-center text-secondary p-4">No attendance records yet.</td></tr>
+          <tr><td colspan="7" class="text-center text-secondary p-4">No attendance records yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>

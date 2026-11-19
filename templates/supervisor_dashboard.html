@@ -256,10 +256,23 @@
               <option value="Excused">Excused</option>
             </select><i class="fa fa-chevron-down ico"></i></div>
           </div>
+          <div style="margin-top:12px">
+            <label for="p-reason">Reason for correction <span style="color: var(--red-tx);">*</span></label>
+            <div class="in"><input type="text" id="p-reason" name="reason" placeholder="e.g. Corrected after checking with supervisor" required></div>
+          </div>
           <div class="actions">
             <button type="submit" class="btn">Save changes</button>
             <a class="btn pri" id="p-open" href="{% url 'placements:list' %}">Open page</a>
           </div>
+        </form>
+
+        <form id="verify-form" method="post" action="">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="supervisor_dashboard">
+          <input type="hidden" name="reason" value="Verified via supervisor dashboard">
+          <button type="submit" class="btn" id="p-verify" style="width:100%; justify-content:center; padding:11px; margin-top:10px; border-color: var(--green-bg); color: var(--green-tx);">
+            <i class="fa fa-check-circle"></i> Verify record
+          </button>
         </form>
 
         <div id="panel-empty" style="display:none; margin-top:14px;">
@@ -294,6 +307,7 @@
   var pDate = document.getElementById('p-date');
   var pOpen = document.getElementById('p-open');
   var pAdd = document.getElementById('p-add');
+  var verifyForm = document.getElementById('verify-form');
   var sel = 0;
   var filter = 'all';
 
@@ -339,9 +353,14 @@
       panelEmpty.style.display = 'none';
       panelForm.action = '/placements/' + placementPk + '/attendance/' + attPk + '/edit/';
       pOpen.href = '/placements/' + placementPk + '/attendance/';
+      if (verifyForm) {
+        verifyForm.style.display = 'block';
+        verifyForm.action = '/placements/' + placementPk + '/attendance/' + attPk + '/verify/';
+      }
     } else {
       panelForm.style.display = 'none';
       panelEmpty.style.display = 'block';
+      if (verifyForm) { verifyForm.style.display = 'none'; }
       if (pAdd) { pAdd.href = '/placements/' + placementPk + '/attendance/add/'; }
     }
   }

@@ -25,4 +25,5 @@ urlpatterns = [
     path('<int:pk>/attendance/add/', views.placement_attendance_create, name='attendance_create'),
     path('<int:pk>/attendance/<int:attendance_pk>/edit/', views.placement_attendance_update, name='attendance_update'),
     path('<int:pk>/attendance/<int:attendance_pk>/delete/', views.placement_attendance_delete, name='attendance_delete'),
+    path('<int:pk>/attendance/<int:attendance_pk>/verify/', views.placement_attendance_verify, name='attendance_verify'),
 ]

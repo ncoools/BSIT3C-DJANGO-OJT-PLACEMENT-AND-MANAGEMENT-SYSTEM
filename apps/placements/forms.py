@@ -71,6 +71,13 @@ class EvaluationForm(forms.ModelForm):
 
 
 class AttendanceForm(forms.ModelForm):
+    reason = forms.CharField(
+        required=True,
+        label='Reason for correction',
+        help_text='Explain why this attendance record is being changed (required for audit).',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Forgot to clock out, adjusted per supervisor'}),
+    )
+
     class Meta:
         model = Attendance
         fields = ['attendance_date', 'time_in', 'time_out', 'status']

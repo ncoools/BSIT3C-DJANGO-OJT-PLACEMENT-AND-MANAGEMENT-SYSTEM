@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, time
 
 from django.contrib.auth import get_user_model
 from django.contrib.messages.storage.fallback import FallbackStorage
@@ -13,7 +13,7 @@ from apps.departments.models import Department
 from apps.students.models import Student
 from apps.supervisors.models import Supervisor
 from .forms import PlacementForm
-from .models import Placement
+from .models import Placement, Attendance
 from .views import placement_list
 
 
@@ -189,4 +189,84 @@ class PlacementPermissionTests(TestCase):
         self._login(self.student_user)
         response = self.client.get(reverse('placements:evaluation_list', args=[self.other_placement.pk]))
         self.assertEqual(response.status_code, 403)
+
+
+class AttendanceIntegrityTests(TestCase):
+    """Audit trail + supervisor verification for attendance."""
+
+    def setUp(self):
+        User = get_user_model()
+        self.admin_user = User.objects.create_user(username='admin', password='test-password', email='admin@example.com')
+        self.supervisor_user = User.objects.create_user(username='sup', password='test-password', email='sup@example.com')
+        self.student_user = User.objects.create_user(username='stud', password='test-password', email='stud@example.com')
+
+        department = Department.objects.create(department_name='Information Technology')
+        self.company = Company.objects.create(company_name='North Star')
+        self.supervisor = Supervisor.objects.create(
+            first_name='Alex', last_name='Smith', supervisor_type=Supervisor.Type.COMPANY,
+            company=self.company, email='sup@example.com',
+        )
+        self.student = Student.objects.create(
+            student_number='2026-001', first_name='Jamie', last_name='Doe',
+            email='stud@example.com',
+        )
+        self.placement = Placement.objects.create(
+            student=self.student, company=self.company, supervisor=self.supervisor,
+            start_date=date(2026, 6, 1), end_date=date(2026, 9, 1),
+            required_hours=500, status=Placement.Status.IN_PROGRESS,
+        )
+        self.record = Attendance.objects.create(
+            placement=self.placement,
+            attendance_date=date(2026, 6, 1),
+            time_in=time(8, 0),
+            time_out=time(17, 0),
+        )
+
+    def _login(self, user):
+        self.client.force_login(user)
+
+    def test_hours_auto_calculated_from_time_in_out(self):
+        self.assertEqual(float(self.record.hours_rendered), 9.0)
+
+    def test_update_requires_reason(self):
+        self._login(self.admin_user)
+        response = self.client.post(reverse('placements:attendance_update', args=[self.placement.pk, self.record.pk]), {
+            'attendance_date': '2026-06-01',
+            'time_in': '09:00',
+            'time_out': '17:00',
+            'status': 'Present',
+        })
+        self.assertEqual(response.status_code, 200)  # re-rendered with errors
+
+    def test_update_writes_audit_log(self):
+        from apps.placements.models import AttendanceEditLog
+
+        self._login(self.admin_user)
+        response = self.client.post(reverse('placements:attendance_update', args=[self.placement.pk, self.record.pk]), {
+            'attendance_date': '2026-06-01',
+            'time_in': '09:00',
+            'time_out': '17:00',
+            'status': 'Present',
+            'reason': 'Corrected time-in',
+        })
+        self.assertRedirects(response, reverse('placements:attendance_list', args=[self.placement.pk]), fetch_redirect_response=False)
+        log = AttendanceEditLog.objects.latest('created_at')
+        self.assertIn('time_in: 08:00 → 09:00', log.changes)
+        self.assertEqual(log.reason, 'Corrected time-in')
+        self.assertEqual(log.editor, self.admin_user)
+
+    def test_verify_requires_manage_permission(self):
+        self._login(self.student_user)
+        response = self.client.post(reverse('placements:attendance_verify', args=[self.placement.pk, self.record.pk]))
+        self.assertEqual(response.status_code, 403)
+        self.record.refresh_from_db()
+        self.assertFalse(self.record.verified)
+
+    def test_verify_sets_verified_flag(self):
+        self._login(self.supervisor_user)
+        response = self.client.post(reverse('placements:attendance_verify', args=[self.placement.pk, self.record.pk]))
+        self.assertRedirects(response, reverse('placements:attendance_list', args=[self.placement.pk]), fetch_redirect_response=False)
+        self.record.refresh_from_db()
+        self.assertTrue(self.record.verified)
+
 

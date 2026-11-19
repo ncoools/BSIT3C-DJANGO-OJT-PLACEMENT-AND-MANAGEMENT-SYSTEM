@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, time
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -20,6 +20,7 @@ from apps.supervisors.models import Supervisor
 
 from .models import (
     Attendance,
+    AttendanceEditLog,
     OJTSchedule,
     Placement,
     PlacementEvaluation,
@@ -49,6 +50,29 @@ def _company_supervisor_map():
             'label': f'{sup.first_name} {sup.last_name}',
         })
     return mapping
+
+
+def _log_attendance_change(attendance, editor, reason, old_values, creation=False):
+    """Write an audit log entry for an attendance edit/create."""
+    fields = ['attendance_date', 'time_in', 'time_out', 'status', 'hours_rendered', 'verified']
+    if creation:
+        changes = ', '.join(f'{field}={getattr(attendance, field)}' for field in fields if getattr(attendance, field) is not None)
+    else:
+        parts = []
+        for field in fields:
+            old = old_values.get(field)
+            new = getattr(attendance, field)
+            old_str = old.strftime('%H:%M') if isinstance(old, time) else str(old)
+            new_str = new.strftime('%H:%M') if isinstance(new, time) else str(new)
+            if old_str != new_str:
+                parts.append(f'{field}: {old_str} → {new_str}')
+        changes = ', '.join(parts) or 'no changes'
+    AttendanceEditLog.objects.create(
+        attendance=attendance,
+        editor=editor if editor and editor.is_authenticated else None,
+        reason=reason,
+        changes=changes,
+    )
 
 
 @login_required(login_url='login')
@@ -366,9 +390,10 @@ def placement_attendance_list(request, pk):
         records = records.filter(attendance_date__lte=to_date)
     attendance_records = list(records)
 
-    rendered_hours = round(sum(float(r.hours_rendered or 0) for r in attendance_records), 2)
+    rendered_hours = round(sum(float(r.hours_rendered or 0) for r in attendance_records if r.verified), 2)
     required_hours = placement.required_hours if placement.status != Placement.Status.CANCELLED else 0
     hours_pct = round((rendered_hours / required_hours * 100), 1) if required_hours else 0
+    verified_count = sum(1 for r in attendance_records if r.verified)
 
     return render(request, 'placements/placement_attendance_list.html', {
         'placement': placement,
@@ -378,6 +403,7 @@ def placement_attendance_list(request, pk):
         'hours_pct': hours_pct,
         'from_date': from_date,
         'to_date': to_date,
+        'verified_count': verified_count,
     })
 
 
@@ -386,9 +412,11 @@ def placement_attendance_create(request, pk):
     placement = authz.get_placement_for_user(request, pk, manage=True)
     form = AttendanceForm(request.POST or None, initial={'placement': placement, 'attendance_date': date.today()})
     if request.method == 'POST' and form.is_valid():
+        reason = form.cleaned_data['reason']
         attendance = form.save(commit=False)
         attendance.placement = placement
         attendance.save()
+        _log_attendance_change(attendance, request.user, reason, {}, creation=True)
         messages.success(request, 'Attendance record added successfully.')
         return redirect('placements:attendance_list', pk=placement.pk)
     return render(request, 'placements/attendance_form.html', {
@@ -402,9 +430,19 @@ def placement_attendance_create(request, pk):
 def placement_attendance_update(request, pk, attendance_pk):
     placement = authz.get_placement_for_user(request, pk, manage=True)
     attendance = get_object_or_404(Attendance, pk=attendance_pk, placement=placement)
+    old_values = {
+        'attendance_date': attendance.attendance_date,
+        'time_in': attendance.time_in,
+        'time_out': attendance.time_out,
+        'status': attendance.status,
+        'hours_rendered': attendance.hours_rendered,
+        'verified': attendance.verified,
+    }
     form = AttendanceForm(request.POST or None, instance=attendance)
     if request.method == 'POST' and form.is_valid():
+        reason = form.cleaned_data['reason']
         attendance = form.save()  # hours_rendered auto-calculated on save
+        _log_attendance_change(attendance, request.user, reason, old_values)
         messages.success(request, 'Attendance updated successfully.')
         next_url = request.POST.get('next') or request.GET.get('next')
         if next_url == 'supervisor_dashboard':
@@ -423,6 +461,43 @@ def placement_attendance_update(request, pk, attendance_pk):
 def placement_attendance_delete(request, pk, attendance_pk):
     placement = authz.get_placement_for_user(request, pk, manage=True)
     attendance = get_object_or_404(Attendance, pk=attendance_pk, placement=placement)
+    reason = request.POST.get('reason', 'Deleted by supervisor')
+    _log_attendance_change(attendance, request.user, reason, {
+        'attendance_date': attendance.attendance_date,
+        'time_in': attendance.time_in,
+        'time_out': attendance.time_out,
+        'status': attendance.status,
+        'hours_rendered': attendance.hours_rendered,
+        'verified': attendance.verified,
+    })
     attendance.delete()
     messages.success(request, 'Attendance record deleted successfully.')
+    return redirect('placements:attendance_list', pk=placement.pk)
+
+
+@login_required(login_url='login')
+@require_POST
+def placement_attendance_verify(request, pk, attendance_pk):
+    """Supervisor verifies an attendance record. Only verified hours count toward OJT completion."""
+    placement = authz.get_placement_for_user(request, pk, manage=True)
+    attendance = get_object_or_404(Attendance, pk=attendance_pk, placement=placement)
+    reason = request.POST.get('reason', 'Verified by supervisor')
+    if not attendance.verified:
+        old_values = {
+            'attendance_date': attendance.attendance_date,
+            'time_in': attendance.time_in,
+            'time_out': attendance.time_out,
+            'status': attendance.status,
+            'hours_rendered': attendance.hours_rendered,
+            'verified': attendance.verified,
+        }
+        attendance.verified = True
+        attendance.save()
+        _log_attendance_change(attendance, request.user, reason, old_values)
+        messages.success(request, 'Attendance record verified.')
+    else:
+        messages.info(request, 'Record already verified.')
+    from_url = request.POST.get('next')
+    if from_url == 'supervisor_dashboard':
+        return redirect('supervisor_dashboard')
     return redirect('placements:attendance_list', pk=placement.pk)
