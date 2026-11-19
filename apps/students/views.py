@@ -1,5 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+
+from apps.authz import admin_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -8,6 +10,7 @@ from .forms import StudentForm
 from .models import Student
 
 
+@admin_required
 @login_required(login_url='login')
 def student_list(request):
     query = request.GET.get('q', '').strip()
@@ -22,6 +25,7 @@ def student_list(request):
     return render(request, 'students/student_list.html', {'students': students, 'query': query})
 
 
+@admin_required
 @login_required(login_url='login')
 def student_create(request):
     form = StudentForm(request.POST or None, request.FILES or None)
@@ -32,6 +36,7 @@ def student_create(request):
     return render(request, 'students/student_form.html', {'form': form, 'title': 'Add student'})
 
 
+@admin_required
 @login_required(login_url='login')
 def student_update(request, pk):
     student = get_object_or_404(Student, pk=pk)
@@ -47,6 +52,7 @@ def student_update(request, pk):
     })
 
 
+@admin_required
 @login_required(login_url='login')
 @require_POST
 def student_delete(request, pk):

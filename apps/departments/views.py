@@ -1,5 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+
+from apps.authz import admin_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -7,12 +9,14 @@ from .forms import DepartmentForm
 from .models import Department
 
 
+@admin_required
 @login_required(login_url='login')
 def department_list(request):
     departments = Department.objects.filter(department_name__iexact='INFORMATION TECHNOLOGY')
     return render(request, 'departments/department_list.html', {'departments': departments})
 
 
+@admin_required
 @login_required(login_url='login')
 def department_create(request):
     form = DepartmentForm(request.POST or None)
@@ -23,6 +27,7 @@ def department_create(request):
     return render(request, 'departments/department_form.html', {'form': form, 'title': 'Add department'})
 
 
+@admin_required
 @login_required(login_url='login')
 def department_update(request, pk):
     department = get_object_or_404(Department, pk=pk)
@@ -38,6 +43,7 @@ def department_update(request, pk):
     })
 
 
+@admin_required
 @login_required(login_url='login')
 @require_POST
 def department_delete(request, pk):

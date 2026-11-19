@@ -13,6 +13,7 @@ from .forms import (
     ReportForm,
     RequirementForm,
 )
+from apps import authz
 from apps.companies.models import Company
 from apps.students.models import Student
 from apps.supervisors.models import Supervisor
@@ -55,6 +56,14 @@ def placement_list(request):
     query = request.GET.get('q', '').strip()
     status = request.GET.get('status', '')
     placements = Placement.objects.select_related('student', 'company', 'supervisor')
+    if authz.is_admin(request.user):
+        pass  # admins see all placements
+    elif authz.is_supervisor(request.user):
+        supervisor = authz.current_supervisor(request.user)
+        placements = placements.filter(supervisor=supervisor)
+    else:
+        student = authz.current_student(request.user)
+        placements = placements.filter(student=student)
     if query:
         placements = placements.filter(
             Q(student__student_number__icontains=query)
@@ -76,6 +85,9 @@ def placement_list(request):
 
 @login_required(login_url='login')
 def placement_create(request):
+    if authz.is_student(request.user):
+        return redirect('student_dashboard')
+
     email = (request.user.email or '').strip()
     supervisor = Supervisor.objects.filter(email__iexact=email).first() if email else None
 
@@ -110,7 +122,7 @@ def placement_create(request):
 
 @login_required(login_url='login')
 def placement_update(request, pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     email = (request.user.email or '').strip()
     supervisor = Supervisor.objects.filter(email__iexact=email).first() if email else None
 
@@ -145,7 +157,7 @@ def placement_update(request, pk):
 @login_required(login_url='login')
 @require_POST
 def placement_delete(request, pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     related_records_exist = (
         placement.evaluations.exists()
         or placement.requirements.exists()
@@ -164,7 +176,7 @@ def placement_delete(request, pk):
 # PLACEMENT REQUIREMENTS
 @login_required(login_url='login')
 def placement_requirement_list(request, pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=False)
     query = request.GET.get('q', '').strip()
     status = request.GET.get('status', '')
     requirements = placement.requirements.all().order_by('requirement_name')
@@ -185,7 +197,7 @@ def placement_requirement_list(request, pk):
 
 @login_required(login_url='login')
 def placement_requirement_create(request, pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     form = RequirementForm(request.POST or None, initial={'placement': placement.pk})
     if request.method == 'POST' and form.is_valid():
         form.save()
@@ -200,7 +212,7 @@ def placement_requirement_create(request, pk):
 
 @login_required(login_url='login')
 def placement_requirement_update(request, pk, requirement_pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     requirement = get_object_or_404(PlacementRequirement, pk=requirement_pk, placement=placement)
     form = RequirementForm(request.POST or None, instance=requirement)
     if request.method == 'POST' and form.is_valid():
@@ -218,7 +230,7 @@ def placement_requirement_update(request, pk, requirement_pk):
 @login_required(login_url='login')
 @require_POST
 def placement_requirement_delete(request, pk, requirement_pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     requirement = get_object_or_404(PlacementRequirement, pk=requirement_pk, placement=placement)
     requirement.delete()
     messages.success(request, 'Placement requirement deleted successfully.')
@@ -228,7 +240,7 @@ def placement_requirement_delete(request, pk, requirement_pk):
 # PLACEMENT EVALUATIONS
 @login_required(login_url='login')
 def placement_evaluation_list(request, pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=False)
     evaluations = placement.evaluations.all().order_by('-evaluation_date')
     return render(request, 'placements/placement_evaluation_list.html', {
         'placement': placement,
@@ -238,7 +250,7 @@ def placement_evaluation_list(request, pk):
 
 @login_required(login_url='login')
 def placement_evaluation_create(request, pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     form = EvaluationForm(request.POST or None, initial={'placement': placement.pk})
     if request.method == 'POST' and form.is_valid():
         form.save()
@@ -253,7 +265,7 @@ def placement_evaluation_create(request, pk):
 
 @login_required(login_url='login')
 def placement_evaluation_update(request, pk, evaluation_pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     evaluation = get_object_or_404(PlacementEvaluation, pk=evaluation_pk, placement=placement)
     form = EvaluationForm(request.POST or None, instance=evaluation)
     if request.method == 'POST' and form.is_valid():
@@ -271,7 +283,7 @@ def placement_evaluation_update(request, pk, evaluation_pk):
 @login_required(login_url='login')
 @require_POST
 def placement_evaluation_delete(request, pk, evaluation_pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     evaluation = get_object_or_404(PlacementEvaluation, pk=evaluation_pk, placement=placement)
     evaluation.delete()
     messages.success(request, 'Placement evaluation deleted successfully.')
@@ -281,7 +293,7 @@ def placement_evaluation_delete(request, pk, evaluation_pk):
 # PLACEMENT REPORTS
 @login_required(login_url='login')
 def placement_report_list(request, pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=False)
     query = request.GET.get('q', '').strip()
     status = request.GET.get('status', '')
     reports = placement.reports.all().order_by('-report_date')
@@ -300,7 +312,7 @@ def placement_report_list(request, pk):
 
 @login_required(login_url='login')
 def placement_report_create(request, pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     form = ReportForm(request.POST or None, initial={'placement': placement.pk})
     if request.method == 'POST' and form.is_valid():
         form.save()
@@ -315,7 +327,7 @@ def placement_report_create(request, pk):
 
 @login_required(login_url='login')
 def placement_report_update(request, pk, report_pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     report = get_object_or_404(PlacementReport, pk=report_pk, placement=placement)
     form = ReportForm(request.POST or None, instance=report)
     if request.method == 'POST' and form.is_valid():
@@ -333,7 +345,7 @@ def placement_report_update(request, pk, report_pk):
 @login_required(login_url='login')
 @require_POST
 def placement_report_delete(request, pk, report_pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     report = get_object_or_404(PlacementReport, pk=report_pk, placement=placement)
     report.delete()
     messages.success(request, 'Placement report deleted successfully.')
@@ -343,7 +355,7 @@ def placement_report_delete(request, pk, report_pk):
 # PLACEMENT ATTENDANCE
 @login_required(login_url='login')
 def placement_attendance_list(request, pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=False)
     from_date = request.GET.get('from_date', '').strip()
     to_date = request.GET.get('to_date', '').strip()
 
@@ -371,7 +383,7 @@ def placement_attendance_list(request, pk):
 
 @login_required(login_url='login')
 def placement_attendance_create(request, pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     form = AttendanceForm(request.POST or None, initial={'placement': placement, 'attendance_date': date.today()})
     if request.method == 'POST' and form.is_valid():
         attendance = form.save(commit=False)
@@ -388,7 +400,7 @@ def placement_attendance_create(request, pk):
 
 @login_required(login_url='login')
 def placement_attendance_update(request, pk, attendance_pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     attendance = get_object_or_404(Attendance, pk=attendance_pk, placement=placement)
     form = AttendanceForm(request.POST or None, instance=attendance)
     if request.method == 'POST' and form.is_valid():
@@ -409,7 +421,7 @@ def placement_attendance_update(request, pk, attendance_pk):
 @login_required(login_url='login')
 @require_POST
 def placement_attendance_delete(request, pk, attendance_pk):
-    placement = get_object_or_404(Placement, pk=pk)
+    placement = authz.get_placement_for_user(request, pk, manage=True)
     attendance = get_object_or_404(Attendance, pk=attendance_pk, placement=placement)
     attendance.delete()
     messages.success(request, 'Attendance record deleted successfully.')

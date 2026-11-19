@@ -1,5 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+
+from apps.authz import admin_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -8,6 +10,7 @@ from .forms import SupervisorForm
 from .models import Supervisor
 
 
+@admin_required
 @login_required(login_url='login')
 def supervisor_list(request):
     query = request.GET.get('q', '').strip()
@@ -26,6 +29,7 @@ def supervisor_list(request):
     })
 
 
+@admin_required
 @login_required(login_url='login')
 def supervisor_create(request):
     form = SupervisorForm(request.POST or None)
@@ -39,6 +43,7 @@ def supervisor_create(request):
     })
 
 
+@admin_required
 @login_required(login_url='login')
 def supervisor_update(request, pk):
     supervisor = get_object_or_404(Supervisor, pk=pk)
@@ -54,6 +59,7 @@ def supervisor_update(request, pk):
     })
 
 
+@admin_required
 @login_required(login_url='login')
 @require_POST
 def supervisor_delete(request, pk):
