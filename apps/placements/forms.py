@@ -57,8 +57,9 @@ class EvaluationForm(forms.ModelForm):
 class AttendanceForm(forms.ModelForm):
     class Meta:
         model = Attendance
-        fields = ['time_in', 'time_out', 'status']
+        fields = ['attendance_date', 'time_in', 'time_out', 'status']
         widgets = {
+            'attendance_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'time_in': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'time_out': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'status': forms.Select(attrs={'class': 'form-select'}),

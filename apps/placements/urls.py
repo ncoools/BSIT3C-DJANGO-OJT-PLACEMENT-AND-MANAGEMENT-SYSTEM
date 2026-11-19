@@ -21,5 +21,8 @@ urlpatterns = [
     path('<int:pk>/reports/add/', views.placement_report_create, name='report_create'),
     path('<int:pk>/reports/<int:report_pk>/edit/', views.placement_report_update, name='report_update'),
     path('<int:pk>/reports/<int:report_pk>/delete/', views.placement_report_delete, name='report_delete'),
+    path('<int:pk>/attendance/', views.placement_attendance_list, name='attendance_list'),
+    path('<int:pk>/attendance/add/', views.placement_attendance_create, name='attendance_create'),
     path('<int:pk>/attendance/<int:attendance_pk>/edit/', views.placement_attendance_update, name='attendance_update'),
+    path('<int:pk>/attendance/<int:attendance_pk>/delete/', views.placement_attendance_delete, name='attendance_delete'),
 ]

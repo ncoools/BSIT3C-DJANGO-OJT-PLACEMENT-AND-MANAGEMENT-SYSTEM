@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -270,6 +272,51 @@ def placement_report_delete(request, pk, report_pk):
 
 # PLACEMENT ATTENDANCE
 @login_required(login_url='login')
+def placement_attendance_list(request, pk):
+    placement = get_object_or_404(Placement, pk=pk)
+    from_date = request.GET.get('from_date', '').strip()
+    to_date = request.GET.get('to_date', '').strip()
+
+    records = placement.attendance_records.all().order_by('-attendance_date')
+    if from_date:
+        records = records.filter(attendance_date__gte=from_date)
+    if to_date:
+        records = records.filter(attendance_date__lte=to_date)
+    attendance_records = list(records)
+
+    rendered_hours = round(sum(float(r.hours_rendered or 0) for r in attendance_records), 2)
+    required_hours = placement.required_hours if placement.status != Placement.Status.CANCELLED else 0
+    hours_pct = round((rendered_hours / required_hours * 100), 1) if required_hours else 0
+
+    return render(request, 'placements/placement_attendance_list.html', {
+        'placement': placement,
+        'attendance_records': attendance_records,
+        'rendered_hours': rendered_hours,
+        'required_hours': required_hours,
+        'hours_pct': hours_pct,
+        'from_date': from_date,
+        'to_date': to_date,
+    })
+
+
+@login_required(login_url='login')
+def placement_attendance_create(request, pk):
+    placement = get_object_or_404(Placement, pk=pk)
+    form = AttendanceForm(request.POST or None, initial={'placement': placement, 'attendance_date': date.today()})
+    if request.method == 'POST' and form.is_valid():
+        attendance = form.save(commit=False)
+        attendance.placement = placement
+        attendance.save()
+        messages.success(request, 'Attendance record added successfully.')
+        return redirect('placements:attendance_list', pk=placement.pk)
+    return render(request, 'placements/attendance_form.html', {
+        'form': form,
+        'title': 'Add attendance',
+        'placement': placement,
+    })
+
+
+@login_required(login_url='login')
 def placement_attendance_update(request, pk, attendance_pk):
     placement = get_object_or_404(Placement, pk=pk)
     attendance = get_object_or_404(Attendance, pk=attendance_pk, placement=placement)
@@ -277,10 +324,20 @@ def placement_attendance_update(request, pk, attendance_pk):
     if request.method == 'POST' and form.is_valid():
         attendance = form.save()  # hours_rendered auto-calculated on save
         messages.success(request, 'Attendance updated successfully.')
-        return redirect('supervisor_dashboard')
+        return redirect('placements:attendance_list', pk=placement.pk)
     return render(request, 'placements/attendance_form.html', {
         'form': form,
         'title': 'Edit attendance',
         'placement': placement,
         'attendance': attendance,
     })
+
+
+@login_required(login_url='login')
+@require_POST
+def placement_attendance_delete(request, pk, attendance_pk):
+    placement = get_object_or_404(Placement, pk=pk)
+    attendance = get_object_or_404(Attendance, pk=attendance_pk, placement=placement)
+    attendance.delete()
+    messages.success(request, 'Attendance record deleted successfully.')
+    return redirect('placements:attendance_list', pk=placement.pk)

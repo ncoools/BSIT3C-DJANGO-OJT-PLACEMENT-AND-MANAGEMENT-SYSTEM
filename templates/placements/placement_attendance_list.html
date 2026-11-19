@@ -1,0 +1,99 @@
+{% extends "theme/base.html" %}
+{% block content %}
+<div class="container-xl">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'placements:list' %}">Placements</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Attendance</li>
+    </ol>
+  </nav>
+  <hr class="border-secondary">
+
+  <div class="page-header d-print-none mb-3">
+    <div class="row align-items-center">
+      <div class="col">
+        <span class="page-pretitle">OJT Placement</span>
+        <h2 class="page-title">Attendance · {{ placement.student }}</h2>
+        <p class="text-secondary mb-0">{{ placement.company.company_name }} · {{ placement.start_date|date:"M j, Y" }} → {{ placement.end_date|date:"M j, Y" }}</p>
+      </div>
+      <div class="col-auto">
+        {% if not is_student %}<a class="btn btn-primary" href="{% url 'placements:attendance_create' placement.pk %}">Add attendance</a>{% endif %}
+        <a class="btn btn-outline-secondary" href="{% url 'placements:list' %}"><i class="fa fa-arrow-left"></i> Back</a>
+      </div>
+    </div>
+  </div>
+
+  {% for message in messages %}<div class="alert alert-success">{{ message }}</div>{% endfor %}
+
+  <div class="card mb-4">
+    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <h5 class="card-title mb-0">Hours summary</h5>
+    </div>
+    <div class="card-body">
+      <div class="d-flex flex-wrap gap-4 align-items-center">
+        <div>
+          <div class="text-secondary small text-uppercase">Accumulated</div>
+          <div class="h3 mb-0 text-warning">{{ rendered_hours }}</div>
+        </div>
+        <div>
+          <div class="text-secondary small text-uppercase">Required</div>
+          <div class="h3 mb-0">{{ required_hours }}</div>
+        </div>
+        <div style="flex:1; min-width:180px;">
+          <div class="progress" style="height:10px;">
+            <div class="progress-bar" role="progressbar" style="width: {{ hours_pct }}%;" aria-valuenow="{{ hours_pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="text-secondary small mt-1">{{ hours_pct }}% of required hours reached</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+      <input class="form-control" type="date" name="from_date" value="{{ from_date }}" aria-label="From date">
+    </div>
+    <div class="col-auto">
+      <input class="form-control" type="date" name="to_date" value="{{ to_date }}" aria-label="To date">
+    </div>
+    <div class="col-auto"><button class="btn btn-outline-primary" type="submit">Filter</button></div>
+    {% if from_date or to_date %}<div class="col-auto"><a class="btn btn-outline-secondary" href="{% url 'placements:attendance_list' placement.pk %}">Clear</a></div>{% endif %}
+  </form>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead>
+          <tr><th>Date</th><th>Time in</th><th>Time out</th><th>Hours</th><th>Status</th>{% if not is_student %}<th class="w-1">Actions</th>{% endif %}</tr>
+        </thead>
+        <tbody>
+          {% for record in attendance_records %}
+          <tr>
+            <td>{{ record.attendance_date|date:"M j, Y" }}</td>
+            <td>{{ record.time_in|time:"H:i"|default:"—" }}</td>
+            <td>{{ record.time_out|time:"H:i"|default:"—" }}</td>
+            <td>{{ record.hours_rendered|floatformat:2|default:"—" }}</td>
+            <td>
+              <span class="pill {% if record.status == 'Present' %}ok{% elif record.status == 'Late' %}wa{% elif record.status == 'Absent' %}ba{% else %}in{% endif %}">{{ record.status }}</span>
+            </td>
+            {% if not is_student %}
+            <td>
+              <div class="d-flex gap-2">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'placements:attendance_update' placement.pk record.pk %}">Edit</a>
+                <form method="post" action="{% url 'placements:attendance_delete' placement.pk record.pk %}" onsubmit="return confirm('Delete this attendance record?');">
+                  {% csrf_token %}<button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                </form>
+              </div>
+            </td>
+            {% endif %}
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-secondary p-4">No attendance records yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
