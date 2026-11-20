@@ -46,19 +46,6 @@ def _student_supervisor_map():
     return mapping
 
 
-def _company_supervisor_map():
-    """Map company pk -> list of supervisors (id/label) assigned to that company."""
-    mapping = {}
-    for sup in Supervisor.objects.select_related('company').all():
-        if not sup.company_id:
-            continue
-        mapping.setdefault(str(sup.company_id), []).append({
-            'id': str(sup.pk),
-            'label': f'{sup.first_name} {sup.last_name}',
-        })
-    return mapping
-
-
 def _log_attendance_change(attendance, editor, reason, old_values, creation=False):
     """Write an audit log entry for an attendance edit/create."""
     fields = ['attendance_date', 'time_in', 'time_out', 'status', 'hours_rendered', 'verified']
@@ -146,7 +133,6 @@ def placement_create(request):
     return render(request, 'placements/placement_form.html', {
         'form': form,
         'title': 'Add placement',
-        'company_supervisors': _company_supervisor_map(),
         'student_supervisor_map': _student_supervisor_map(),
     })
 
@@ -180,7 +166,6 @@ def placement_update(request, pk):
         'form': form,
         'title': 'Edit placement',
         'placement': placement,
-        'company_supervisors': _company_supervisor_map(),
         'student_supervisor_map': _student_supervisor_map(),
     })
 

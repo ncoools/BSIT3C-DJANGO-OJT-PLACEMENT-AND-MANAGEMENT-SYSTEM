@@ -931,6 +931,30 @@ def _unique_student_number():
         next_number += 1
 
 
+def _remove_student_profile_for_account(user):
+    """Remove a student profile when an account is promoted to supervisor."""
+    email = (user.email or '').strip()
+    if not email:
+        return True
+    for student in Student.objects.filter(email__iexact=email):
+        if student.placements.exists():
+            return False
+        student.delete()
+    return True
+
+
+def _remove_supervisor_profile_for_account(user):
+    """Remove a supervisor profile when an account is changed to student."""
+    email = (user.email or '').strip()
+    if not email:
+        return True
+    for supervisor in Supervisor.objects.filter(email__iexact=email):
+        if supervisor.placements.exists() or supervisor.evaluations.exists():
+            return False
+        supervisor.delete()
+    return True
+
+
 @admin_required
 @require_POST
 def account_action(request, user_id):
@@ -950,26 +974,37 @@ def account_action(request, user_id):
     supervisor_group, _ = Group.objects.get_or_create(name='supervisor')
 
     if action == 'set_student':
+        if not _remove_supervisor_profile_for_account(target):
+            messages.error(request, 'This supervisor is assigned to a placement or evaluation and cannot be changed to a student.')
+            return redirect('accounts')
         target.groups.remove(supervisor_group)
         target.groups.add(student_group)
-        if (target.email or '').strip() and not Student.objects.filter(email__iexact=target.email).exists():
+        email = (target.email or '').strip()
+        if email and not Student.objects.filter(email__iexact=email).exists():
             Student.objects.create(
                 student_number=_unique_student_number(),
                 first_name=target.first_name or target.username,
                 last_name=target.last_name or '—',
-                email=target.email,
+                email=email,
             )
         messages.success(request, f'{target.username} is now a student account.')
     elif action == 'set_supervisor':
+        if not _remove_student_profile_for_account(target):
+            messages.error(request, 'This student is assigned to a placement and cannot be changed to a supervisor.')
+            return redirect('accounts')
         target.groups.remove(student_group)
         target.groups.add(supervisor_group)
-        if (target.email or '').strip() and not Supervisor.objects.filter(email__iexact=target.email).exists():
+        email = (target.email or '').strip()
+        if email and not Supervisor.objects.filter(email__iexact=email).exists():
             Supervisor.objects.create(
                 first_name=target.first_name or target.username,
                 last_name=target.last_name or '—',
-                email=target.email,
+                email=email,
             )
-        messages.success(request, f'{target.username} is now a supervisor account.')
+        messages.success(
+            request,
+            f'{target.username} is now a supervisor account. You can assign this supervisor when creating or editing a placement.',
+        )
     elif action == 'clear_role':
         target.groups.remove(student_group, supervisor_group)
         messages.success(request, f'Role cleared for {target.username}.')

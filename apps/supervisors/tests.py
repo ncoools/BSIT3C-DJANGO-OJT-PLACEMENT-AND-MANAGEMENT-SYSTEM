@@ -48,19 +48,16 @@ class SupervisorViewTests(TestCase):
         request._messages = FallbackStorage(request)
         return supervisor_list(request)
 
-    def test_create_supervisor(self):
-        response = self.client.post(reverse('supervisors:create'), {
-            'first_name': 'Alex',
-            'last_name': 'Smith',
-            'email': 'alex@example.com',
-            'contact_no': '555-0100',
-            'company': self.company.pk,
-        })
+    def test_manual_supervisor_create_url_is_removed(self):
+        response = self.client.get('/supervisors/add/')
 
-        supervisor = Supervisor.objects.get()
-        self.assertRedirects(response, reverse('supervisors:list'), fetch_redirect_response=False)
-        self.assertEqual(supervisor.company, self.company)
-        self.assertContains(self.list_response('North Star'), 'Alex Smith')
+        self.assertEqual(response.status_code, 404)
+
+    def test_supervisor_list_has_no_manual_add_link(self):
+        html = self.client.get(reverse('supervisors:list')).content.decode()
+
+        self.assertNotIn('supervisors:create', html)
+        self.assertNotIn('Add supervisor', html)
 
     def test_supervisor_assigned_to_placement_cannot_be_deleted(self):
         supervisor = Supervisor.objects.create(

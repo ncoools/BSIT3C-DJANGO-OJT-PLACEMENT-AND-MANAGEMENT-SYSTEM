@@ -7,7 +7,6 @@
       <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        {{ company_supervisors|json_script:'company-supervisors' }}
         {{ student_supervisor_map|json_script:'student-supervisors' }}
         <div class="d-flex gap-2">
           <button class="btn btn-primary" type="submit">Save placement</button>
@@ -19,19 +18,12 @@
 </div>
 <script>
 (function () {
-  var companySelect = document.querySelector('select[name="company"]');
   var supervisorSelect = document.querySelector('select[name="supervisor"]');
   var studentSelect = document.querySelector('select[name="student"]');
-  if (!companySelect || !supervisorSelect || !studentSelect) { return; }
+  if (!supervisorSelect || !studentSelect) { return; }
 
-  var companyDataEl = document.getElementById('company-supervisors');
   var studentDataEl = document.getElementById('student-supervisors');
-  var companyData = companyDataEl ? JSON.parse(companyDataEl.textContent) : {};
   var studentData = studentDataEl ? JSON.parse(studentDataEl.textContent) : {};
-
-  var allSupervisorOptions = Array.prototype.slice.call(supervisorSelect.options).map(function (o) {
-    return { value: o.value, text: o.textContent };
-  });
   var allStudentOptions = Array.prototype.slice.call(studentSelect.options).map(function (o) {
     return { value: o.value, text: o.textContent };
   });
@@ -51,18 +43,6 @@
     });
   }
 
-  function rebuildSupervisors() {
-    var companyId = companySelect.value;
-    var current = supervisorSelect.value;
-    var allowed = (companyId && companyData[companyId]) ? companyData[companyId] : [];
-    var filtered = allSupervisorOptions.filter(function (o) {
-      if (!o.value) { return false; }
-      return allowed.some(function (s) { return String(s.id) === String(o.value); });
-    });
-    setOptions(supervisorSelect, filtered, current);
-    rebuildStudents();
-  }
-
   function rebuildStudents() {
     var supId = supervisorSelect.value;
     var current = studentSelect.value;
@@ -75,10 +55,8 @@
     setOptions(studentSelect, filtered, current);
   }
 
-  companySelect.addEventListener('change', rebuildSupervisors);
   supervisorSelect.addEventListener('change', rebuildStudents);
-
-  rebuildSupervisors();
+  rebuildStudents();
 })();
 </script>
 {% endblock %}

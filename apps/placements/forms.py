@@ -25,12 +25,8 @@ class PlacementForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        company = cleaned.get('company')
         supervisor = cleaned.get('supervisor')
         student = cleaned.get('student')
-
-        if company and supervisor and supervisor.company_id != company.id:
-            self.add_error('supervisor', 'Select a supervisor assigned to the selected company.')
 
         if student and supervisor:
             assigned = set(

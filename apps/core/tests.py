@@ -254,6 +254,33 @@ class RegistrationTests(TestCase):
         self.assertTrue(user.is_active)
         self.assertTrue(user.groups.filter(name='supervisor').exists())
 
+    def test_supervisor_without_company_can_be_assigned_to_placement(self):
+        student = Student.objects.create(
+            student_number='NOC-001', first_name='No', last_name='Company',
+        )
+        company = Company.objects.create(company_name='Designated Co')
+        supervisor = Supervisor.objects.create(
+            first_name='Account', last_name='Supervisor', email='account-sup@example.com',
+        )
+        admin = get_user_model().objects.create_user(
+            username='coordinator', password='secret1234', is_staff=True,
+        )
+        self.client.force_login(admin)
+
+        response = self.client.post(reverse('placements:create'), {
+            'student': student.pk,
+            'company': company.pk,
+            'supervisor': supervisor.pk,
+            'start_date': '2026-06-01',
+            'end_date': '2026-09-01',
+            'required_hours': 500,
+        })
+
+        self.assertRedirects(response, reverse('placements:list'), fetch_redirect_response=False)
+        placement = Placement.objects.get(student=student)
+        self.assertEqual(placement.supervisor, supervisor)
+        self.assertIsNone(supervisor.company)
+
     def test_supervisor_register_is_admin_only(self):
         student_user = get_user_model().objects.create_user(username='studGuest', password='secret1234', email='studguest@example.com')
         Student.objects.create(student_number='GUEST-001', first_name='Guest', last_name='Student', email='studguest@example.com')
@@ -557,6 +584,27 @@ class AccountsViewTests(TestCase):
         self.assertFalse(self.target.groups.filter(name='student').exists())
         self.assertTrue(Supervisor.objects.filter(email__iexact='target@example.com').exists())
 
+    def test_admin_can_promote_registered_student_to_supervisor(self):
+        email = 'promote@example.com'
+        user = get_user_model().objects.create_user(
+            username='promote', password='secret1234', email=email,
+            first_name='Pro', last_name='Mote',
+        )
+        Student.objects.create(
+            student_number='PROM-001', first_name='Pro', last_name='Mote', email=email,
+        )
+        self.assertTrue(user.groups.filter(name='student').exists())
+        self.client.force_login(self.admin)
+
+        response = self.client.post(reverse('account_action', args=[user.pk]), {'action': 'set_supervisor'})
+
+        self.assertRedirects(response, reverse('accounts'), fetch_redirect_response=False)
+        user.refresh_from_db()
+        self.assertTrue(user.groups.filter(name='supervisor').exists())
+        self.assertFalse(user.groups.filter(name='student').exists())
+        self.assertTrue(Supervisor.objects.filter(email__iexact=email).exists())
+        self.assertFalse(Student.objects.filter(email__iexact=email).exists())
+
     def test_admin_can_clear_role(self):
         Group.objects.get_or_create(name='student')[0].user_set.add(self.target)
         self.client.force_login(self.admin)
@@ -661,6 +709,24 @@ class AdminModuleAccessTests(TestCase):
         self.client.force_login(self.admin)
 
         response = self.client.get('/students/add/')
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_supervisor_manual_creation_links_are_removed(self):
+        self.client.force_login(self.admin)
+
+        dashboard_html = self.client.get(reverse('dashboard')).content.decode()
+        supervisors_html = self.client.get(reverse('supervisors:list')).content.decode()
+
+        self.assertNotIn('supervisors:create', dashboard_html)
+        self.assertNotIn('+ Supervisor', dashboard_html)
+        self.assertNotIn('supervisors:create', supervisors_html)
+        self.assertNotIn('Add supervisor', supervisors_html)
+
+    def test_supervisor_manual_create_url_is_removed(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get('/supervisors/add/')
 
         self.assertEqual(response.status_code, 404)
 

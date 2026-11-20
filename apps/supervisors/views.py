@@ -31,20 +31,6 @@ def supervisor_list(request):
 
 @admin_required
 @login_required(login_url='login')
-def supervisor_create(request):
-    form = SupervisorForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, 'Supervisor created successfully.')
-        return redirect('supervisors:list')
-    return render(request, 'supervisors/supervisor_form.html', {
-        'form': form,
-        'title': 'Add supervisor',
-    })
-
-
-@admin_required
-@login_required(login_url='login')
 def supervisor_update(request, pk):
     supervisor = get_object_or_404(Supervisor, pk=pk)
     form = SupervisorForm(request.POST or None, instance=supervisor)
