@@ -137,7 +137,6 @@
       </div>
       <div class="btns">
         <button class="btn" type="button" onclick="window.print()"><i class="fa fa-file-export"></i>Export report</button>
-        <a class="btn pri" href="{% url 'placements:create' %}"><i class="fa fa-plus"></i>New placement</a>
       </div>
     </div>
 
@@ -155,7 +154,7 @@
         <section class="card students">
           <div class="pad">
             <div class="top"><h2>Your students</h2><span class="sec-note">{{ today|date:"j M Y" }}</span></div>
-            <div class="sub">View today's attendance and manage each student's hours.</div>
+            <div class="sub">Students assigned by an administrator appear here. View today's attendance and manage each student's hours.</div>
             <div class="filters">
               <label class="field" style="margin:0"><i class="fa fa-search ico"></i><input id="q" placeholder="Search by name or student ID" aria-label="Search students"></label>
               <label class="field" style="margin:0"><i class="fa fa-building-o ico"></i>
@@ -210,7 +209,7 @@
                   <td class="c-right"><button class="mg{% if forloop.first %} lime{% endif %}" type="button">Manage <i class="fa fa-arrow-right"></i></button></td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" class="empty">No placements assigned to you yet.</td></tr>
+                <tr><td colspan="7" class="empty">No students assigned yet. An administrator assigns students to your dashboard.</td></tr>
                 {% endfor %}
               </tbody>
             </table>

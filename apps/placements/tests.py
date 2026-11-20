@@ -102,7 +102,7 @@ class PlacementTests(TestCase):
 
 
 class PlacementPermissionTests(TestCase):
-    """Object-level permission checks: supervisors manage only their own placements."""
+    """Admin-only placement assignment; supervisors still manage placement records."""
 
     def setUp(self):
         User = get_user_model()
@@ -151,27 +151,60 @@ class PlacementPermissionTests(TestCase):
         response = self.client.get(reverse('placements:update', args=[self.other_placement.pk]))
         self.assertEqual(response.status_code, 200)
 
-    def test_supervisor_can_edit_their_own_placement(self):
+    def test_supervisor_cannot_edit_placement(self):
         self._login(self.supervisor_user)
         response = self.client.get(reverse('placements:update', args=[self.placement.pk]))
-        self.assertEqual(response.status_code, 200)
-
-    def test_supervisor_cannot_edit_other_supervisor_placement(self):
-        self._login(self.supervisor_user)
-        response = self.client.get(reverse('placements:update', args=[self.other_placement.pk]))
         self.assertEqual(response.status_code, 403)
 
-    def test_supervisor_cannot_delete_other_supervisor_placement(self):
+    def test_supervisor_cannot_delete_placement(self):
         self._login(self.supervisor_user)
-        response = self.client.post(reverse('placements:delete', args=[self.other_placement.pk]))
+        response = self.client.post(reverse('placements:delete', args=[self.placement.pk]))
         self.assertEqual(response.status_code, 403)
-        self.assertTrue(Placement.objects.filter(pk=self.other_placement.pk).exists())
+        self.assertTrue(Placement.objects.filter(pk=self.placement.pk).exists())
+
+    def test_supervisor_cannot_create_placement_for_student(self):
+        self._login(self.supervisor_user)
+        response = self.client.post(reverse('placements:create'), {
+            'student': self.student.pk,
+            'company': self.company.pk,
+            'supervisor': self.supervisor.pk,
+            'start_date': '2026-06-01',
+            'end_date': '2026-09-01',
+            'required_hours': 500,
+        })
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(Placement.objects.filter(student=self.student).count(), 1)
+
+    def test_admin_can_assign_student_to_a_different_supervisor(self):
+        self._login(self.admin_user)
+        response = self.client.post(reverse('placements:update', args=[self.placement.pk]), {
+            'student': self.student.pk,
+            'company': self.company.pk,
+            'supervisor': self.other_supervisor.pk,
+            'start_date': '2026-06-01',
+            'end_date': '2026-09-01',
+            'required_hours': 500,
+        })
+
+        self.assertRedirects(response, reverse('placements:list'), fetch_redirect_response=False)
+        self.placement.refresh_from_db()
+        self.assertEqual(self.placement.supervisor, self.other_supervisor)
 
     def test_supervisor_list_only_shows_their_placements(self):
         self._login(self.supervisor_user)
         response = self.client.get(reverse('placements:list'))
         self.assertContains(response, 'Jamie Doe')
         self.assertNotContains(response, 'Jordan Roe')
+
+    def test_supervisor_list_hides_assignment_actions(self):
+        self._login(self.supervisor_user)
+        html = self.client.get(reverse('placements:list')).content.decode()
+
+        self.assertNotIn('Add placement', html)
+        self.assertNotIn(reverse('placements:create'), html)
+        self.assertNotIn(reverse('placements:update', args=[self.placement.pk]), html)
+        self.assertNotIn(reverse('placements:delete', args=[self.placement.pk]), html)
 
     def test_student_cannot_edit_placement(self):
         self._login(self.student_user)

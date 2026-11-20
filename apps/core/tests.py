@@ -731,6 +731,61 @@ class AdminModuleAccessTests(TestCase):
         self.assertEqual(response.status_code, 404)
 
 
+class SupervisorStudentConnectionTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_user(
+            username='conn-admin', password='secret1234', is_staff=True,
+        )
+        self.supervisor_user = User.objects.create_user(
+            username='conn-sup', password='secret1234', email='conn-sup@example.com',
+        )
+        self.student_user = User.objects.create_user(
+            username='conn-student', password='secret1234', email='conn-student@example.com',
+        )
+        Group.objects.get_or_create(name='supervisor')[0].user_set.add(self.supervisor_user)
+        Group.objects.get_or_create(name='student')[0].user_set.add(self.student_user)
+
+        self.supervisor = Supervisor.objects.create(
+            first_name='Conn', last_name='Supervisor', email='conn-sup@example.com',
+        )
+        self.student = Student.objects.create(
+            student_number='CONN-001', first_name='Conn', last_name='Student',
+            email='conn-student@example.com',
+        )
+        self.company = Company.objects.create(company_name='Connection Co')
+
+    def test_admin_assignment_shows_student_on_supervisor_dashboard(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('placements:create'), {
+            'student': self.student.pk,
+            'company': self.company.pk,
+            'supervisor': self.supervisor.pk,
+            'start_date': '2026-06-01',
+            'end_date': '2026-09-01',
+            'required_hours': 500,
+        })
+
+        self.assertRedirects(response, reverse('placements:list'), fetch_redirect_response=False)
+        self.client.force_login(self.supervisor_user)
+        dashboard = self.client.get(reverse('supervisor_dashboard'))
+
+        self.assertEqual(dashboard.context['assigned_students'], 1)
+        self.assertEqual(dashboard.context['today_rows'][0]['student'], self.student)
+        self.assertContains(dashboard, 'Conn Student')
+        self.assertContains(dashboard, 'CONN-001')
+
+    def test_supervisor_dashboard_has_no_assignment_action(self):
+        self.client.force_login(self.supervisor_user)
+
+        dashboard = self.client.get(reverse('supervisor_dashboard'))
+        html = dashboard.content.decode()
+
+        self.assertNotIn(reverse('placements:create'), html)
+        self.assertNotIn('New placement', html)
+        self.assertIn('assigned by an administrator', html)
+
+
 class VerifiedAttendanceClockTests(TestCase):
     def setUp(self):
         User = get_user_model()

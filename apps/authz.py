@@ -105,3 +105,13 @@ def admin_required(view_func):
             return redirect('student_dashboard' if is_student(request.user) else 'supervisor_dashboard')
         return view_func(request, *args, **kwargs)
     return wrapper
+
+
+def admin_only(view_func):
+    """Deny non-admins with HTTP 403, used for admin-only actions."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not is_admin(request.user):
+            raise PermissionDenied('Only an administrator can perform this action.')
+        return view_func(request, *args, **kwargs)
+    return wrapper

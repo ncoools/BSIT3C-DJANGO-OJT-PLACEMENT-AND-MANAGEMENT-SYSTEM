@@ -23,21 +23,11 @@ class PlacementForm(forms.ModelForm):
             'required_hours': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
         }
 
-    def clean(self):
-        cleaned = super().clean()
-        supervisor = cleaned.get('supervisor')
-        student = cleaned.get('student')
-
-        if student and supervisor:
-            assigned = set(
-                Placement.objects.filter(student=student)
-                .exclude(supervisor__isnull=True)
-                .values_list('supervisor_id', flat=True)
-            )
-            if assigned and supervisor.id not in assigned:
-                self.add_error('student', 'This student is assigned to a specific supervisor and cannot be re-assigned to a different supervisor.')
-
-        return cleaned
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['supervisor'].help_text = (
+            'Admin-only: the student will appear on this supervisor\'s dashboard.'
+        )
 
 
 class RequirementForm(forms.ModelForm):

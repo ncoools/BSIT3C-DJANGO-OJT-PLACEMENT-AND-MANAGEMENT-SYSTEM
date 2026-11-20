@@ -21,9 +21,6 @@ from .forms import (
     RequirementForm,
 )
 from apps import authz
-from apps.companies.models import Company
-from apps.students.models import Student
-from apps.supervisors.models import Supervisor
 
 from .models import (
     Attendance,
@@ -34,16 +31,6 @@ from .models import (
     PlacementReport,
     PlacementRequirement,
 )
-
-
-def _student_supervisor_map():
-    """Map student pk -> list of supervisor pks they are assigned to (via placements)."""
-    mapping = {}
-    for student_id, supervisor_id in Placement.objects.exclude(
-        supervisor__isnull=True
-    ).values_list('student_id', 'supervisor_id').distinct():
-        mapping.setdefault(str(student_id), []).append(str(supervisor_id))
-    return mapping
 
 
 def _log_attendance_change(attendance, editor, reason, old_values, creation=False):
@@ -98,82 +85,45 @@ def placement_list(request):
         'query': query,
         'selected_status': status,
         'statuses': Placement.Status.choices,
+        'is_admin': authz.is_admin(request.user),
     })
 
 
 @login_required(login_url='login')
+@authz.admin_only
 def placement_create(request):
-    if authz.is_student(request.user):
-        return redirect('student_dashboard')
-
-    email = (request.user.email or '').strip()
-    supervisor = Supervisor.objects.filter(email__iexact=email).first() if email else None
-
     form = PlacementForm(request.POST or None)
-    if supervisor:
-        # Students already under a DIFFERENT supervisor cannot be added by this account
-        assigned_to_others = Placement.objects.exclude(
-            supervisor=supervisor
-        ).exclude(
-            supervisor__isnull=True
-        ).values_list('student_id', flat=True).distinct()
-        form.fields['student'].queryset = Student.objects.exclude(pk__in=assigned_to_others)
-        # Lock the supervisor field — this account IS the supervisor for its students
-        form.fields['supervisor'].initial = supervisor
-        form.fields['supervisor'].disabled = True
-        form.fields['supervisor'].help_text = 'Locked to your supervisor account.'
-
     if request.method == 'POST' and form.is_valid():
-        placement = form.save(commit=False)
-        if supervisor:
-            placement.supervisor = supervisor
-        placement.save()
+        form.save()
         messages.success(request, 'Placement created successfully.')
         return redirect('placements:list')
     return render(request, 'placements/placement_form.html', {
         'form': form,
         'title': 'Add placement',
-        'student_supervisor_map': _student_supervisor_map(),
     })
 
 
 @login_required(login_url='login')
+@authz.admin_only
 def placement_update(request, pk):
-    placement = authz.get_placement_for_user(request, pk, manage=True)
-    email = (request.user.email or '').strip()
-    supervisor = Supervisor.objects.filter(email__iexact=email).first() if email else None
-
+    placement = get_object_or_404(Placement, pk=pk)
     form = PlacementForm(request.POST or None, instance=placement)
-    if supervisor:
-        assigned_to_others = Placement.objects.exclude(
-            supervisor=supervisor
-        ).exclude(
-            supervisor__isnull=True
-        ).values_list('student_id', flat=True).distinct()
-        form.fields['student'].queryset = Student.objects.exclude(pk__in=assigned_to_others)
-        form.fields['supervisor'].initial = supervisor
-        form.fields['supervisor'].disabled = True
-        form.fields['supervisor'].help_text = 'Locked to your supervisor account.'
-
     if request.method == 'POST' and form.is_valid():
-        placement = form.save(commit=False)
-        if supervisor:
-            placement.supervisor = supervisor
-        placement.save()
+        form.save()
         messages.success(request, 'Placement updated successfully.')
         return redirect('placements:list')
     return render(request, 'placements/placement_form.html', {
         'form': form,
         'title': 'Edit placement',
         'placement': placement,
-        'student_supervisor_map': _student_supervisor_map(),
     })
 
 
 @login_required(login_url='login')
+@authz.admin_only
 @require_POST
 def placement_delete(request, pk):
-    placement = authz.get_placement_for_user(request, pk, manage=True)
+    placement = get_object_or_404(Placement, pk=pk)
     related_records_exist = (
         placement.evaluations.exists()
         or placement.requirements.exists()
