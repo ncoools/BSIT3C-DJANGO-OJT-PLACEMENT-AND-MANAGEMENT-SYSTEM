@@ -16,6 +16,9 @@ staticfiles/
 *.pem
 *.sql
 
+# Local design references
+/supervisor_design.html
+
 # Virtual environments
 venv/
 .venv/
