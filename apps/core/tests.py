@@ -783,6 +783,8 @@ class DashboardAlertTests(TestCase):
             'placement-ending',
         })
         self.assertContains(response, 'Attendance awaiting verification')
+        self.assertNotContains(response, 'Active placements')
+        self.assertNotContains(response, 'Currently on OJT')
 
     def test_supervisor_dashboard_shows_live_alerts(self):
         self.client.force_login(self.supervisor_user)
