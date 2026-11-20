@@ -229,9 +229,11 @@ def placement_requirement_list(request, pk):
 @login_required(login_url='login')
 def placement_requirement_create(request, pk):
     placement = authz.get_placement_for_user(request, pk, manage=True)
-    form = RequirementForm(request.POST or None, initial={'placement': placement.pk})
+    form = RequirementForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        requirement = form.save(commit=False)
+        requirement.placement = placement
+        requirement.save()
         messages.success(request, 'Placement requirement created successfully.')
         return redirect('placements:requirement_list', pk=pk)
     return render(request, 'placements/placement_requirement_form.html', {
@@ -247,7 +249,9 @@ def placement_requirement_update(request, pk, requirement_pk):
     requirement = get_object_or_404(PlacementRequirement, pk=requirement_pk, placement=placement)
     form = RequirementForm(request.POST or None, instance=requirement)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        requirement = form.save(commit=False)
+        requirement.placement = placement
+        requirement.save()
         messages.success(request, 'Placement requirement updated successfully.')
         return redirect('placements:requirement_list', pk=pk)
     return render(request, 'placements/placement_requirement_form.html', {
@@ -283,7 +287,7 @@ def placement_evaluation_list(request, pk):
 def placement_evaluation_create(request, pk):
     placement = authz.get_placement_for_user(request, pk, manage=True)
     supervisor = authz.current_supervisor(request.user)
-    initial = {'placement': placement.pk}
+    initial = {}
     if supervisor:
         initial['evaluator'] = supervisor
     form = EvaluationForm(request.POST or None, initial=initial)
@@ -292,6 +296,7 @@ def placement_evaluation_create(request, pk):
         form.fields['evaluator'].help_text = 'Locked to your supervisor account.'
     if request.method == 'POST' and form.is_valid():
         evaluation = form.save(commit=False)
+        evaluation.placement = placement
         if supervisor:
             evaluation.evaluator = supervisor
         evaluation.save()
@@ -315,6 +320,7 @@ def placement_evaluation_update(request, pk, evaluation_pk):
         form.fields['evaluator'].help_text = 'Locked to your supervisor account.'
     if request.method == 'POST' and form.is_valid():
         evaluation = form.save(commit=False)
+        evaluation.placement = placement
         if supervisor:
             evaluation.evaluator = supervisor
         evaluation.save()
@@ -361,9 +367,11 @@ def placement_report_list(request, pk):
 @login_required(login_url='login')
 def placement_report_create(request, pk):
     placement = authz.get_placement_for_user(request, pk, manage=True)
-    form = ReportForm(request.POST or None, initial={'placement': placement.pk})
+    form = ReportForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        report = form.save(commit=False)
+        report.placement = placement
+        report.save()
         messages.success(request, 'Placement report created successfully.')
         return redirect('placements:report_list', pk=pk)
     return render(request, 'placements/placement_report_form.html', {
@@ -379,7 +387,9 @@ def placement_report_update(request, pk, report_pk):
     report = get_object_or_404(PlacementReport, pk=report_pk, placement=placement)
     form = ReportForm(request.POST or None, instance=report)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        report = form.save(commit=False)
+        report.placement = placement
+        report.save()
         messages.success(request, 'Placement report updated successfully.')
         return redirect('placements:report_list', pk=pk)
     return render(request, 'placements/placement_report_form.html', {

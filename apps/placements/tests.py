@@ -12,7 +12,7 @@ from apps.companies.models import Company
 from apps.students.models import Student
 from apps.supervisors.models import Supervisor
 from .forms import PlacementForm
-from .models import Placement, PlacementEvaluation, Attendance
+from .models import Placement, PlacementEvaluation, PlacementRequirement, PlacementReport, Attendance
 from .views import placement_list
 
 
@@ -187,6 +187,46 @@ class PlacementPermissionTests(TestCase):
         self._login(self.student_user)
         response = self.client.get(reverse('placements:evaluation_list', args=[self.other_placement.pk]))
         self.assertEqual(response.status_code, 403)
+
+    def test_post_cannot_reparent_requirement_to_other_placement(self):
+        self._login(self.supervisor_user)
+        response = self.client.post(reverse('placements:requirement_create', args=[self.placement.pk]), {
+            'placement': self.other_placement.pk,
+            'requirement_name': 'Cross-placement attempt',
+            'status': PlacementRequirement.Status.PENDING,
+        })
+
+        self.assertEqual(response.status_code, 302)
+        requirement = PlacementRequirement.objects.get(requirement_name='Cross-placement attempt')
+        self.assertEqual(requirement.placement_id, self.placement.pk)
+
+    def test_post_cannot_reparent_evaluation_to_other_placement(self):
+        self._login(self.supervisor_user)
+        response = self.client.post(reverse('placements:evaluation_create', args=[self.placement.pk]), {
+            'placement': self.other_placement.pk,
+            'evaluator': self.supervisor.pk,
+            'evaluation_date': date(2026, 7, 1),
+            'rating': PlacementEvaluation.Rating.GOOD,
+        })
+
+        self.assertEqual(response.status_code, 302)
+        evaluation = PlacementEvaluation.objects.get(evaluation_date=date(2026, 7, 1))
+        self.assertEqual(evaluation.placement_id, self.placement.pk)
+        self.assertEqual(evaluation.evaluator_id, self.supervisor.pk)
+
+    def test_post_cannot_reparent_report_to_other_placement(self):
+        self._login(self.supervisor_user)
+        response = self.client.post(reverse('placements:report_create', args=[self.placement.pk]), {
+            'placement': self.other_placement.pk,
+            'report_type': PlacementReport.ReportType.WEEKLY,
+            'report_date': date(2026, 7, 1),
+            'content': 'Cross-placement attempt',
+            'status': PlacementReport.Status.DRAFT,
+        })
+
+        self.assertEqual(response.status_code, 302)
+        report = PlacementReport.objects.get(content='Cross-placement attempt')
+        self.assertEqual(report.placement_id, self.placement.pk)
 
 
 class AttendanceIntegrityTests(TestCase):

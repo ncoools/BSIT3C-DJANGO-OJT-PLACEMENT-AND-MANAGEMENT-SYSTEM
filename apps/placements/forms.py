@@ -47,9 +47,8 @@ class PlacementForm(forms.ModelForm):
 class RequirementForm(forms.ModelForm):
     class Meta:
         model = PlacementRequirement
-        fields = ['placement', 'requirement_name', 'date_submitted', 'file_path', 'status']
+        fields = ['requirement_name', 'date_submitted', 'file_path', 'status']
         widgets = {
-            'placement': forms.Select(attrs={'class': 'form-select'}),
             'requirement_name': forms.TextInput(attrs={'class': 'form-control'}),
             'date_submitted': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'file_path': forms.TextInput(attrs={'class': 'form-control'}),
@@ -60,9 +59,8 @@ class RequirementForm(forms.ModelForm):
 class EvaluationForm(forms.ModelForm):
     class Meta:
         model = PlacementEvaluation
-        fields = ['placement', 'evaluator', 'evaluation_date', 'rating', 'remarks']
+        fields = ['evaluator', 'evaluation_date', 'rating', 'remarks']
         widgets = {
-            'placement': forms.Select(attrs={'class': 'form-select'}),
             'evaluator': forms.Select(attrs={'class': 'form-select'}),
             'evaluation_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'rating': forms.Select(attrs={'class': 'form-select'}),
@@ -92,9 +90,8 @@ class AttendanceForm(forms.ModelForm):
 class ReportForm(forms.ModelForm):
     class Meta:
         model = PlacementReport
-        fields = ['placement', 'report_type', 'report_date', 'content', 'status']
+        fields = ['report_type', 'report_date', 'content', 'status']
         widgets = {
-            'placement': forms.Select(attrs={'class': 'form-select'}),
             'report_type': forms.Select(attrs={'class': 'form-select'}),
             'report_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'content': forms.Textarea(attrs={'class': 'form-control'}),
