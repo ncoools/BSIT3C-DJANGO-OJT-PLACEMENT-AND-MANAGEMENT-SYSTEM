@@ -1,6 +1,6 @@
 import secrets
 import string
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from apps import authz
 from apps.core.models import PasswordResetPIN, PasswordState
@@ -109,6 +109,15 @@ def _validate_registration_data(data):
 
 
 PIN_LIFETIME = timedelta(minutes=10)
+PASSWORD_CHANGE_START = time(19, 0)
+PASSWORD_CHANGE_END = time(22, 0)
+PASSWORD_CHANGE_WINDOW_LABEL = '7:00 PM – 10:00 PM'
+
+
+def _password_change_window_open():
+    """Password changes/resets are only available in the evening via Asia/Manila time."""
+    current_time = timezone.localtime(timezone.now()).time()
+    return PASSWORD_CHANGE_START <= current_time <= PASSWORD_CHANGE_END
 
 
 def _generate_student_password(first_name, last_name, student_number):
@@ -878,6 +887,9 @@ def account_action(request, user_id):
         if not target.groups.filter(name='student').exists():
             messages.error(request, 'Password reset PINs can only be issued to student accounts.')
             return redirect('accounts')
+        if not _password_change_window_open():
+            messages.error(request, f'Password resets are available daily from {PASSWORD_CHANGE_WINDOW_LABEL} only.')
+            return redirect('accounts')
         pin, record = _issue_password_reset_pin(target)
         return render(request, 'auth/password_pin_generated.html', {
             'target': target,
@@ -893,6 +905,7 @@ def account_action(request, user_id):
 def password_change_view(request):
     """Change a generated password at first login, or use an admin-issued PIN."""
     forced_change = _has_forced_password_change(request.user)
+    window_open = _password_change_window_open()
     errors = {}
     form_data = {
         'identity': request.POST.get('identity', ''),
@@ -900,57 +913,61 @@ def password_change_view(request):
     }
 
     if request.method == 'POST':
-        new_password = request.POST.get('new_password', '')
-        confirm_password = request.POST.get('confirm_password', '')
+        if not window_open:
+            errors['window'] = f'Password changes are available daily from {PASSWORD_CHANGE_WINDOW_LABEL} only.'
+        else:
+            new_password = request.POST.get('new_password', '')
+            confirm_password = request.POST.get('confirm_password', '')
 
-        if not new_password:
-            errors['new_password'] = 'New password is required.'
-        elif new_password != confirm_password:
-            errors['confirm_password'] = 'Passwords do not match.'
+            if not new_password:
+                errors['new_password'] = 'New password is required.'
+            elif new_password != confirm_password:
+                errors['confirm_password'] = 'Passwords do not match.'
 
-        user = request.user if forced_change else None
-        reset_record = None
+            user = request.user if forced_change else None
 
-        if not forced_change:
-            if not form_data['identity'].strip():
-                errors['identity'] = 'Enter your username, email, or student number.'
-            if not form_data['pin'].strip():
-                errors['pin'] = 'Enter the PIN issued by your administrator.'
-            if not errors.get('identity'):
-                user = _find_user_by_identity(form_data['identity'])
-                if not user:
-                    errors['identity'] = 'No matching account was found.'
+            if not forced_change:
+                if not form_data['identity'].strip():
+                    errors['identity'] = 'Enter your username, email, or student number.'
+                if not form_data['pin'].strip():
+                    errors['pin'] = 'Enter the PIN issued by your administrator.'
+                if not errors.get('identity'):
+                    user = _find_user_by_identity(form_data['identity'])
+                    if not user:
+                        errors['identity'] = 'No matching account was found.'
 
-        if user and not errors:
-            try:
-                validate_password(new_password, user)
-            except ValidationError as exc:
-                errors['new_password'] = ' '.join(exc.messages)
+            if user and not errors:
+                try:
+                    validate_password(new_password, user)
+                except ValidationError as exc:
+                    errors['new_password'] = ' '.join(exc.messages)
 
-        if not forced_change and user and not errors:
-            reset_record = PasswordResetPIN.objects.filter(
-                user=user,
-                used_at__isnull=True,
-                expires_at__gt=timezone.now(),
-            ).order_by('-created_at').first()
-            if not reset_record or not reset_record.verify(form_data['pin'].strip()):
-                errors['pin'] = 'PIN is invalid, expired, or already used.'
+            if not forced_change and user and not errors:
+                reset_record = PasswordResetPIN.objects.filter(
+                    user=user,
+                    used_at__isnull=True,
+                    expires_at__gt=timezone.now(),
+                ).order_by('-created_at').first()
+                if not reset_record or not reset_record.verify(form_data['pin'].strip()):
+                    errors['pin'] = 'PIN is invalid, expired, or already used.'
 
-        if not errors and user is not None:
-            user.set_password(new_password)
-            user.save(update_fields=['password'])
-            PasswordState.objects.update_or_create(
-                user=user,
-                defaults={'must_change_password': False},
-            )
-            if request.user.is_authenticated and request.user.pk == user.pk:
-                update_session_auth_hash(request, user)
-                return redirect('dashboard')
-            messages.success(request, 'Password changed. Sign in with your new password.')
-            return redirect('login')
+            if not errors and user is not None:
+                user.set_password(new_password)
+                user.save(update_fields=['password'])
+                PasswordState.objects.update_or_create(
+                    user=user,
+                    defaults={'must_change_password': False},
+                )
+                if request.user.is_authenticated and request.user.pk == user.pk:
+                    update_session_auth_hash(request, user)
+                    return redirect('dashboard')
+                messages.success(request, 'Password changed. Sign in with your new password.')
+                return redirect('login')
 
     return render(request, 'auth/password_change.html', {
         'errors': errors,
         'form_data': form_data,
         'forced_change': forced_change,
+        'window_open': window_open,
+        'window_label': PASSWORD_CHANGE_WINDOW_LABEL,
     })
