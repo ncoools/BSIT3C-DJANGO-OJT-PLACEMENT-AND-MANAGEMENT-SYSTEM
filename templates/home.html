@@ -417,7 +417,7 @@
   {
     "type": "placement",
     "id": {{ placement.pk }},
-    "title": "{{ placement.student.first_name }} {{ placement.student.last_name }} at {{ placement.company.company_name }}"|safe,
+    "title": "{{ placement.student.first_name|escapejs }} {{ placement.student.last_name|escapejs }} at {{ placement.company.company_name|escapejs }}",
     "subtitle": "{{ placement.company.company_name }} · {{ placement.start_date }}",
     "url": "{% url 'placements:list' %}"
   }{% if not forloop.last %},

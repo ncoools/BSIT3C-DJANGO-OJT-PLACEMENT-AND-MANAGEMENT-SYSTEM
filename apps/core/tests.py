@@ -66,6 +66,28 @@ class HomeViewTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
 
+    def test_home_json_payload_escapes_script_tags(self):
+        user = get_user_model().objects.create_user(
+            username='admin', password='secret1234', is_staff=True,
+        )
+        student = Student.objects.create(
+            student_number='HOME-XSS', first_name='Jamie', last_name='Doe',
+        )
+        company = Company.objects.create(
+            company_name='</script><script>alert(1)</script>',
+        )
+        Placement.objects.create(
+            student=student, company=company, start_date=date(2026, 6, 1),
+            end_date=date(2026, 9, 1), required_hours=500,
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('dashboard'))
+
+        self.assertNotContains(response, '</script><script>alert(1)</script>')
+        self.assertNotContains(response, '"|safe')
+        self.assertIn('\\u003C', response.content.decode())
+
 
 class RoleGroupSyncTests(TestCase):
     """auth groups stay in sync with Student/Supervisor profile records."""
