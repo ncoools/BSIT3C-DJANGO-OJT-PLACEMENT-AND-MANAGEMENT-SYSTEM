@@ -70,6 +70,22 @@
   .dh-student .live-clock-label { font-size: 11px; color: var(--mute); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
   .dh-student .live-actions { display: flex; gap: 10px; flex-wrap: wrap; }
   .dh-student .btn-time { min-width: 120px; padding: 10px 18px; font-weight: 600; }
+  @media (max-width: 767.98px) {
+    .dh-student .wrap { padding: 14px 12px 28px; }
+    .dh-student .head { align-items: flex-start; }
+    .dh-student h1 { font-size: 1.4rem; }
+    .dh-student .card { padding: 14px; }
+    .dh-student .stat .v { font-size: 1.5rem; }
+    .dh-student .row { grid-template-columns: 1fr; }
+    .dh-student .c7, .dh-student .c5, .dh-student .c12 { grid-column: 1 / -1; }
+    .dh-student .filter-bar input[type="date"] { max-width: none; width: 100%; }
+    .dh-student .live-clock { font-size: 2rem; }
+    .dh-student .live-actions { width: 100%; }
+    .dh-student .btn-time { min-width: 0; flex: 1 1 140px; }
+  }
+  @media (max-width: 479.98px) {
+    .dh-student .stats { grid-template-columns: 1fr; }
+  }
 </style>
 {% endblock %}
 

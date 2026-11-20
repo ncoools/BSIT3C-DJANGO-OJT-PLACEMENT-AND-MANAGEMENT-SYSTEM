@@ -110,7 +110,18 @@
   .sup .note { color: var(--mute); font-size: 10px; margin: 10px 0 0; }
   .sup .empty { padding: 24px; text-align: center; color: var(--mute); font-size: 12px; }
   @media (max-width: 1100px) { .sup .main { grid-template-columns: 1fr; } .sup .panel { position: static; } .sup .stats { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 760px) { .sup .filters, .sup .bottom { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) {
+    .sup .filters, .sup .bottom { grid-template-columns: 1fr; }
+    .sup .inner { padding: 14px 12px; }
+    .sup h1 { font-size: 1.4rem; }
+    .sup .stat .n { font-size: 1.5rem; }
+    .sup .two, .sup .actions { grid-template-columns: 1fr; }
+    .sup .tw { margin-inline: -12px; padding-inline: 12px; }
+    .sup .btn { font-size: 12px; padding: 8px 10px; }
+  }
+  @media (max-width: 479.98px) {
+    .sup .stats { grid-template-columns: 1fr; }
+  }
 </style>
 {% endblock %}
 
