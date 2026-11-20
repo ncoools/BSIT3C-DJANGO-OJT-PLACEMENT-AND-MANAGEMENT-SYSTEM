@@ -1,5 +1,6 @@
 :root,
 [data-bs-theme="light"] {
+  color-scheme: dark;
   --tblr-primary: #F1D900;
   --tblr-primary-hover: color-mix(in srgb, var(--tblr-primary) 85%, #141414);
   --tblr-primary-active: color-mix(in srgb, var(--tblr-primary) 75%, #141414);
@@ -228,10 +229,51 @@ html {
   border-radius: var(--tblr-border-radius);
 }
 
+/* Keep fields readable on focus/hover and stop browser autofill from painting them white. */
+.form-control,
+.form-select,
+textarea.form-control,
+.input-group-text {
+  color: var(--dh-ink) !important;
+  background-color: var(--dh-surface-inset) !important;
+  border-color: var(--dh-line) !important;
+  caret-color: var(--dh-gold);
+}
+
+.form-control:hover,
 .form-control:focus,
-.form-select:focus {
-  border-color: rgba(var(--tblr-primary-rgb), 0.55);
-  box-shadow: 0 0 0 0.25rem rgba(var(--tblr-primary-rgb), 0.12);
+.form-control:active,
+.form-select:hover,
+.form-select:focus,
+textarea.form-control:hover,
+textarea.form-control:focus {
+  color: var(--dh-ink) !important;
+  background-color: var(--dh-surface-inset) !important;
+  border-color: rgba(var(--tblr-primary-rgb), 0.55) !important;
+  box-shadow: 0 0 0 0.25rem rgba(var(--tblr-primary-rgb), 0.12) !important;
+}
+
+.form-control::placeholder,
+textarea.form-control::placeholder {
+  color: var(--dh-muted);
+  opacity: 1;
+}
+
+.form-control:-webkit-autofill,
+.form-control:-webkit-autofill:hover,
+.form-control:-webkit-autofill:focus,
+textarea.form-control:-webkit-autofill,
+textarea.form-control:-webkit-autofill:hover,
+textarea.form-control:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--dh-ink);
+  caret-color: var(--dh-gold);
+  -webkit-box-shadow: 0 0 0 1000px var(--dh-surface-inset) inset !important;
+  box-shadow: 0 0 0 1000px var(--dh-surface-inset) inset !important;
+}
+
+.form-select option {
+  color: var(--dh-ink);
+  background-color: var(--dh-surface-inset);
 }
 
 .form-selectgroup-label {
