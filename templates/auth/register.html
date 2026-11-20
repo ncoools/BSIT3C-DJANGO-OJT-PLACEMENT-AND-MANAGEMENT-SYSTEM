@@ -169,6 +169,52 @@
             <small class="text-secondary">Used to generate your initial password. Keep it private.</small>
           </div>
 
+          <!-- Sex & Age -->
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-sm-6">
+              <label class="form-label required">Sex</label>
+              <select
+                name="sex"
+                class="form-select {% if errors.sex %}is-invalid{% endif %}">
+                <option value="">Select sex</option>
+                <option value="M" {% if form_data.sex == 'M' %}selected{% endif %}>Male</option>
+                <option value="F" {% if form_data.sex == 'F' %}selected{% endif %}>Female</option>
+              </select>
+              {% if errors.sex %}
+              <div class="invalid-feedback">{{ errors.sex }}</div>
+              {% endif %}
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label required">Age</label>
+              <input
+                type="number"
+                name="age"
+                min="19"
+                max="30"
+                class="form-control {% if errors.age %}is-invalid{% endif %}"
+                value="{{ form_data.age|default:'' }}">
+              {% if errors.age %}
+              <div class="invalid-feedback">{{ errors.age }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Contact information -->
+          <div class="mb-3">
+            <label class="form-label required">Contact number</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-phone text-secondary"></i></span>
+              <input
+                type="tel"
+                name="contact_no"
+                class="form-control {% if errors.contact_no %}is-invalid{% endif %}"
+                value="{{ form_data.contact_no|default:'' }}">
+              {% if errors.contact_no %}
+              <div class="invalid-feedback">{{ errors.contact_no }}</div>
+              {% endif %}
+            </div>
+          </div>
+
           <!-- Submit -->
           <div class="form-footer">
             <button type="submit" class="btn btn-primary w-100">

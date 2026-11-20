@@ -21,7 +21,6 @@ class SupervisorModelTests(TestCase):
         supervisor = Supervisor.objects.create(
             first_name='Alex',
             last_name='Smith',
-            supervisor_type=Supervisor.Type.COMPANY,
             company=company,
         )
 
@@ -31,7 +30,6 @@ class SupervisorModelTests(TestCase):
         supervisor = Supervisor.objects.create(
             first_name='Jamie',
             last_name='Doe',
-            supervisor_type=Supervisor.Type.SCHOOL,
         )
 
         self.assertIsNone(supervisor.company)
@@ -54,7 +52,6 @@ class SupervisorViewTests(TestCase):
         response = self.client.post(reverse('supervisors:create'), {
             'first_name': 'Alex',
             'last_name': 'Smith',
-            'supervisor_type': Supervisor.Type.COMPANY,
             'email': 'alex@example.com',
             'contact_no': '555-0100',
             'company': self.company.pk,
@@ -69,7 +66,6 @@ class SupervisorViewTests(TestCase):
         supervisor = Supervisor.objects.create(
             first_name='Alex',
             last_name='Smith',
-            supervisor_type=Supervisor.Type.COMPANY,
             company=self.company,
         )
         student = Student.objects.create(

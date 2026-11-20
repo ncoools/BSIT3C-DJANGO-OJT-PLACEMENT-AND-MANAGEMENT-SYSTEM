@@ -106,6 +106,25 @@ def _validate_registration_data(data):
     elif Student.objects.filter(student_number=student_number).exists():
         errors['student_number'] = 'Student number already taken.'
 
+    sex = data.get('sex', '').strip()
+    if sex not in ('M', 'F'):
+        errors['sex'] = 'Select a valid sex.'
+
+    age_raw = data.get('age', '').strip()
+    if not age_raw:
+        errors['age'] = 'Age is required.'
+    else:
+        try:
+            age = int(age_raw)
+        except (TypeError, ValueError):
+            errors['age'] = 'Enter a valid age.'
+        else:
+            if not 19 <= age <= 30:
+                errors['age'] = 'Age must be between 19 and 30.'
+
+    if not data.get('contact_no', '').strip():
+        errors['contact_no'] = 'Contact number is required.'
+
     return errors
 
 
@@ -196,10 +215,6 @@ def _validate_supervisor_registration_data(data):
 
     if password != confirm_password:
         errors['confirm_password'] = 'Passwords do not match.'
-
-    supervisor_type = data.get('supervisor_type', Supervisor.Type.COMPANY)
-    if supervisor_type not in Supervisor.Type.values:
-        errors['supervisor_type'] = 'Select a valid supervisor type.'
 
     return errors
 
@@ -679,6 +694,9 @@ def register_view(request):
         'last_name': request.POST.get('last_name', ''),
         'email': request.POST.get('email', ''),
         'student_number': request.POST.get('student_number', ''),
+        'sex': request.POST.get('sex', ''),
+        'age': request.POST.get('age', ''),
+        'contact_no': request.POST.get('contact_no', ''),
     }
 
     errors = _validate_registration_data(form_data)
@@ -704,6 +722,9 @@ def register_view(request):
         first_name=user.first_name,
         last_name=user.last_name,
         email=user.email,
+        sex=form_data['sex'].strip(),
+        age=int(form_data['age'].strip()),
+        contact_no=form_data['contact_no'].strip(),
     )
     PasswordState.objects.create(
         user=user,
@@ -731,7 +752,6 @@ def supervisor_register_view(request):
         'email': request.POST.get('email', ''),
         'password': request.POST.get('password', ''),
         'confirm_password': request.POST.get('confirm_password', ''),
-        'supervisor_type': request.POST.get('supervisor_type', Supervisor.Type.COMPANY),
     }
 
     errors = _validate_supervisor_registration_data(form_data)
@@ -748,7 +768,6 @@ def supervisor_register_view(request):
     )
 
     Supervisor.objects.create(
-        supervisor_type=form_data['supervisor_type'],
         first_name=user.first_name,
         last_name=user.last_name,
         email=user.email,
@@ -870,7 +889,6 @@ def account_action(request, user_id):
         target.groups.add(supervisor_group)
         if (target.email or '').strip() and not Supervisor.objects.filter(email__iexact=target.email).exists():
             Supervisor.objects.create(
-                supervisor_type=Supervisor.Type.COMPANY,
                 first_name=target.first_name or target.username,
                 last_name=target.last_name or '—',
                 email=target.email,

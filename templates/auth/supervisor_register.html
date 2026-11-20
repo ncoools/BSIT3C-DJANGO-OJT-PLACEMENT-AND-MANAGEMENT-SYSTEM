@@ -55,15 +55,6 @@
               </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label required">Supervisor Type</label>
-              <select name="supervisor_type" class="form-select {% if errors.supervisor_type %}is-invalid{% endif %}">
-                <option value="Company" {% if form_data.supervisor_type == 'Company' %}selected{% endif %}>Company</option>
-                <option value="School" {% if form_data.supervisor_type == 'School' %}selected{% endif %}>School</option>
-              </select>
-              {% if errors.supervisor_type %}<div class="invalid-feedback">{{ errors.supervisor_type }}</div>{% endif %}
-            </div>
-
             <div class="row g-3 mb-3">
               <div class="col-md-6">
                 <label class="form-label required">Password</label>

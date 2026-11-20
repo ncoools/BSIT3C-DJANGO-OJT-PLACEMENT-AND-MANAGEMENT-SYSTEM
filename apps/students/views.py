@@ -27,17 +27,6 @@ def student_list(request):
 
 @admin_required
 @login_required(login_url='login')
-def student_create(request):
-    form = StudentForm(request.POST or None, request.FILES or None)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, 'Student created successfully.')
-        return redirect('students:list')
-    return render(request, 'students/student_form.html', {'form': form, 'title': 'Add student'})
-
-
-@admin_required
-@login_required(login_url='login')
 def student_update(request, pk):
     student = get_object_or_404(Student, pk=pk)
     form = StudentForm(request.POST or None, request.FILES or None, instance=student)

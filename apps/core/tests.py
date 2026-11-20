@@ -52,7 +52,7 @@ class HomeViewTests(TestCase):
         )
         Supervisor.objects.create(
             first_name='Hom', last_name='Supervisor',
-            supervisor_type=Supervisor.Type.COMPANY, email='sup@example.com',
+            email='sup@example.com',
         )
         self.client.force_login(user)
 
@@ -112,14 +112,14 @@ class RoleGroupSyncTests(TestCase):
     def test_supervisor_add_creates_group_membership(self):
         user = get_user_model().objects.create_user(username='sup', password='secret1234', email='sup@example.com')
 
-        Supervisor.objects.create(first_name='Sup', last_name='Visor', supervisor_type=Supervisor.Type.COMPANY, email='sup@example.com')
+        Supervisor.objects.create(first_name='Sup', last_name='Visor', email='sup@example.com')
 
         self.assertTrue(user.groups.filter(name='supervisor').exists())
 
     def test_supervisor_delete_removes_group_membership(self):
         user = get_user_model().objects.create_user(username='sup', password='secret1234', email='sup@example.com')
 
-        supervisor = Supervisor.objects.create(first_name='Sup', last_name='Visor', supervisor_type=Supervisor.Type.COMPANY, email='sup@example.com')
+        supervisor = Supervisor.objects.create(first_name='Sup', last_name='Visor', email='sup@example.com')
         supervisor.delete()
 
         self.assertFalse(user.groups.filter(name='supervisor').exists())
@@ -133,13 +133,19 @@ class RegistrationTests(TestCase):
             'last_name': 'Student',
             'email': 'new@example.com',
             'student_number': '2026-100',
+            'sex': 'M',
+            'age': '20',
+            'contact_no': '555-0100',
         })
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'auth/register_success.html')
         generated_password = response.context['generated_password']
         self.assertContains(response, generated_password)
-        self.assertTrue(Student.objects.filter(email__iexact='new@example.com').exists())
+        student = Student.objects.get(email__iexact='new@example.com')
+        self.assertEqual(student.sex, 'M')
+        self.assertEqual(student.age, 20)
+        self.assertEqual(student.contact_no, '555-0100')
         user = get_user_model().objects.get(username='newstudent')
         self.assertTrue(user.groups.filter(name='student').exists())
         self.assertTrue(user.check_password(generated_password))
@@ -160,10 +166,66 @@ class RegistrationTests(TestCase):
             'last_name': 'Student',
             'email': 'new2@example.com',
             'student_number': '',
+            'sex': 'M',
+            'age': '20',
+            'contact_no': '555-0100',
         })
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(get_user_model().objects.filter(username='newstudent2').exists())
+
+    def test_register_requires_sex_age_and_contact_info(self):
+        response = self.client.post(reverse('register'), {
+            'username': 'newstudent3',
+            'first_name': 'New',
+            'last_name': 'Student',
+            'email': 'new3@example.com',
+            'student_number': '2026-101',
+            'sex': '',
+            'age': '',
+            'contact_no': '',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['errors']['sex'], 'Select a valid sex.')
+        self.assertEqual(response.context['errors']['age'], 'Age is required.')
+        self.assertEqual(response.context['errors']['contact_no'], 'Contact number is required.')
+        self.assertFalse(get_user_model().objects.filter(username='newstudent3').exists())
+
+    def test_registered_student_can_be_assigned_to_placement(self):
+        self.client.post(reverse('register'), {
+            'username': 'placedstudent',
+            'first_name': 'Placed',
+            'last_name': 'Student',
+            'email': 'placed@example.com',
+            'student_number': '2026-102',
+            'sex': 'F',
+            'age': '21',
+            'contact_no': '555-0199',
+        })
+        student = Student.objects.get(email__iexact='placed@example.com')
+        company = Company.objects.create(company_name='Placement Co')
+        supervisor = Supervisor.objects.create(
+            first_name='Placement', last_name='Supervisor',
+            email='placement-sup@example.com', company=company,
+        )
+        admin = get_user_model().objects.create_user(
+            username='coord', password='secret1234', is_staff=True,
+        )
+        self.client.force_login(admin)
+
+        response = self.client.post(reverse('placements:create'), {
+            'student': student.pk,
+            'company': company.pk,
+            'supervisor': supervisor.pk,
+            'start_date': '2026-06-01',
+            'end_date': '2026-09-01',
+            'required_hours': 500,
+        })
+
+        self.assertRedirects(response, reverse('placements:list'), fetch_redirect_response=False)
+        placement = Placement.objects.get(student=student)
+        self.assertEqual(placement.supervisor, supervisor)
 
     def test_admin_can_create_active_supervisor_account(self):
         admin = get_user_model().objects.create_user(username='admincreate', password='secret1234', is_staff=True)
@@ -174,7 +236,6 @@ class RegistrationTests(TestCase):
             'email': 'supnew@example.com',
             'password': 'secret-1234',
             'confirm_password': 'secret-1234',
-            'supervisor_type': Supervisor.Type.COMPANY,
         })
 
         self.assertEqual(response.status_code, 200)
@@ -206,7 +267,7 @@ class RegistrationTests(TestCase):
     def test_admin_can_approve_pending_supervisor(self):
         admin = get_user_model().objects.create_user(username='admin', password='secret1234', is_staff=True)
         user = get_user_model().objects.create_user(username='sup2@example.com', email='sup2@example.com', password='secret-1234', is_active=False)
-        Supervisor.objects.create(first_name='Sup', last_name='Two', supervisor_type=Supervisor.Type.COMPANY, email='sup2@example.com')
+        Supervisor.objects.create(first_name='Sup', last_name='Two', email='sup2@example.com')
 
         self.client.force_login(admin)
         response = self.client.post(reverse('approve_supervisor', args=[user.pk]))
@@ -218,7 +279,7 @@ class RegistrationTests(TestCase):
     def test_admin_can_reject_pending_supervisor(self):
         admin = get_user_model().objects.create_user(username='adminrej', password='secret1234', is_staff=True)
         user = get_user_model().objects.create_user(username='sup3@example.com', email='sup3@example.com', password='secret-1234', is_active=False)
-        Supervisor.objects.create(first_name='Sup', last_name='Three', supervisor_type=Supervisor.Type.COMPANY, email='sup3@example.com')
+        Supervisor.objects.create(first_name='Sup', last_name='Three', email='sup3@example.com')
 
         self.client.force_login(admin)
         response = self.client.post(reverse('reject_supervisor', args=[user.pk]))
@@ -231,14 +292,14 @@ class RegistrationTests(TestCase):
         # Inactive accounts resolve to anonymous on the next request, so
         # login_required bounces them to the login page.
         user = get_user_model().objects.create_user(username='sup4@example.com', email='sup4@example.com', password='secret-1234', is_active=False)
-        Supervisor.objects.create(first_name='Sup', last_name='Four', supervisor_type=Supervisor.Type.COMPANY, email='sup4@example.com')
+        Supervisor.objects.create(first_name='Sup', last_name='Four', email='sup4@example.com')
         self.client.force_login(user)
         response = self.client.get(reverse('approvals'))
         self.assertRedirects(response, '/?next=/approvals/', fetch_redirect_response=False)
 
     def test_non_admin_supervisor_redirected_from_approvals_page(self):
         user = get_user_model().objects.create_user(username='sup5@example.com', email='sup5@example.com', password='secret-1234', is_active=True)
-        Supervisor.objects.create(first_name='Sup', last_name='Five', supervisor_type=Supervisor.Type.COMPANY, email='sup5@example.com')
+        Supervisor.objects.create(first_name='Sup', last_name='Five', email='sup5@example.com')
         self.client.force_login(user)
         response = self.client.get(reverse('approvals'))
         self.assertRedirects(response, reverse('dashboard'), fetch_redirect_response=False)
@@ -370,7 +431,7 @@ class PasswordFlowTests(TestCase):
         )
         Supervisor.objects.create(
             first_name='Pin', last_name='Sup',
-            supervisor_type=Supervisor.Type.COMPANY, email='pinsup@example.com',
+            email='pinsup@example.com',
         )
         self.client.force_login(admin)
 
@@ -521,7 +582,7 @@ class AdminModuleAccessTests(TestCase):
         self.student_user = User.objects.create_user(username='stud', password='secret1234', email='stud@example.com')
         Student.objects.create(student_number='ACC-001', first_name='Stu', last_name='Dent', email='stud@example.com')
         self.supervisor_user = User.objects.create_user(username='sup', password='secret1234', email='sup@example.com')
-        Supervisor.objects.create(first_name='Sup', last_name='Visor', supervisor_type=Supervisor.Type.COMPANY, email='sup@example.com')
+        Supervisor.objects.create(first_name='Sup', last_name='Visor', email='sup@example.com')
 
     def test_student_redirected_from_students_module(self):
         self.client.force_login(self.student_user)
@@ -540,6 +601,24 @@ class AdminModuleAccessTests(TestCase):
         response = self.client.get(reverse('students:list'))
 
         self.assertEqual(response.status_code, 200)
+
+    def test_student_manual_creation_links_are_removed(self):
+        self.client.force_login(self.admin)
+
+        dashboard_html = self.client.get(reverse('dashboard')).content.decode()
+        students_html = self.client.get(reverse('students:list')).content.decode()
+
+        self.assertNotIn('students:create', dashboard_html)
+        self.assertNotIn('+ Student', dashboard_html)
+        self.assertNotIn('students:create', students_html)
+        self.assertNotIn('Add student', students_html)
+
+    def test_student_manual_create_url_is_removed(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get('/students/add/')
+
+        self.assertEqual(response.status_code, 404)
 
 
 class VerifiedAttendanceClockTests(TestCase):
@@ -602,7 +681,7 @@ class DashboardAlertTests(TestCase):
         )
         self.supervisor = Supervisor.objects.create(
             first_name='Alert', last_name='Supervisor',
-            supervisor_type=Supervisor.Type.COMPANY, email='alertsup@example.com',
+            email='alertsup@example.com',
         )
         self.company = Company.objects.create(company_name='Alert Company')
         self.placement = Placement.objects.create(
@@ -621,7 +700,7 @@ class DashboardAlertTests(TestCase):
         )
         Supervisor.objects.create(
             first_name='Inactive', last_name='Supervisor',
-            supervisor_type=Supervisor.Type.COMPANY, email=inactive_user.email,
+            email=inactive_user.email,
         )
         PlacementRequirement.objects.create(
             placement=self.placement, requirement_name='Contract',

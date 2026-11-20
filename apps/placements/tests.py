@@ -30,7 +30,6 @@ class PlacementTests(TestCase):
         self.supervisor = Supervisor.objects.create(
             first_name='Alex',
             last_name='Smith',
-            supervisor_type=Supervisor.Type.COMPANY,
             company=self.company,
         )
 
@@ -114,11 +113,11 @@ class PlacementPermissionTests(TestCase):
 
         self.company = Company.objects.create(company_name='North Star')
         self.supervisor = Supervisor.objects.create(
-            first_name='Alex', last_name='Smith', supervisor_type=Supervisor.Type.COMPANY,
+            first_name='Alex', last_name='Smith',
             company=self.company, email='sup@example.com',
         )
         self.other_supervisor = Supervisor.objects.create(
-            first_name='Sam', last_name='Lee', supervisor_type=Supervisor.Type.COMPANY,
+            first_name='Sam', last_name='Lee',
             company=self.company, email='sup2@example.com',
         )
         self.student = Student.objects.create(
@@ -265,7 +264,7 @@ class AttendanceIntegrityTests(TestCase):
 
         self.company = Company.objects.create(company_name='North Star')
         self.supervisor = Supervisor.objects.create(
-            first_name='Alex', last_name='Smith', supervisor_type=Supervisor.Type.COMPANY,
+            first_name='Alex', last_name='Smith',
             company=self.company, email='sup@example.com',
         )
         self.student = Student.objects.create(
@@ -343,7 +342,7 @@ class PdfReportTests(TestCase):
 
         self.company = Company.objects.create(company_name='North Star')
         self.supervisor = Supervisor.objects.create(
-            first_name='Alex', last_name='Smith', supervisor_type=Supervisor.Type.COMPANY,
+            first_name='Alex', last_name='Smith',
             company=self.company, email='sup@example.com',
         )
         self.student = Student.objects.create(
@@ -409,11 +408,11 @@ class EvaluationAssignmentTests(TestCase):
 
         self.company = Company.objects.create(company_name='North Star')
         self.supervisor = Supervisor.objects.create(
-            first_name='Alex', last_name='Smith', supervisor_type=Supervisor.Type.COMPANY,
+            first_name='Alex', last_name='Smith',
             company=self.company, email='sup@example.com',
         )
         self.other_supervisor = Supervisor.objects.create(
-            first_name='Sam', last_name='Lee', supervisor_type=Supervisor.Type.COMPANY,
+            first_name='Sam', last_name='Lee',
             company=self.company, email='sup2@example.com',
         )
         self.student = Student.objects.create(
