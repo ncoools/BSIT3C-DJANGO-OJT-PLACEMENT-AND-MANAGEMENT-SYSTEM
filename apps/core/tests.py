@@ -1,10 +1,13 @@
+from datetime import date, time
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.companies.models import Company
-from apps.placements.models import Placement
+from apps.placements.models import Attendance, Placement
 from apps.students.models import Student
 from apps.supervisors.models import Supervisor
 
@@ -261,4 +264,44 @@ class AdminModuleAccessTests(TestCase):
         response = self.client.get(reverse('students:list'))
 
         self.assertEqual(response.status_code, 200)
+
+
+class VerifiedAttendanceClockTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.user = User.objects.create_user(
+            username='clockstudent', password='secret1234', email='clock@example.com',
+        )
+        student = Student.objects.create(
+            student_number='CLK-001', first_name='Clock', last_name='Student',
+            email='clock@example.com',
+        )
+        company = Company.objects.create(company_name='Clock Co')
+        placement = Placement.objects.create(
+            student=student, company=company, start_date=date(2026, 6, 1),
+            end_date=date(2026, 9, 1), required_hours=500,
+            status=Placement.Status.IN_PROGRESS,
+        )
+        self.attendance = Attendance.objects.create(
+            placement=placement, attendance_date=timezone.now().date(),
+            time_in=time(9, 0), time_out=time(17, 0),
+            status=Attendance.Status.PRESENT, verified=True,
+        )
+        self.client.force_login(self.user)
+
+    def test_time_in_does_not_change_verified_attendance(self):
+        response = self.client.post(reverse('student_time_in'))
+
+        self.assertRedirects(response, reverse('student_dashboard'), fetch_redirect_response=False)
+        self.attendance.refresh_from_db()
+        self.assertEqual(self.attendance.time_in, time(9, 0))
+        self.assertEqual(self.attendance.status, Attendance.Status.PRESENT)
+
+    def test_time_out_does_not_change_verified_attendance(self):
+        response = self.client.post(reverse('student_time_out'))
+
+        self.assertRedirects(response, reverse('student_dashboard'), fetch_redirect_response=False)
+        self.attendance.refresh_from_db()
+        self.assertEqual(self.attendance.time_out, time(17, 0))
+        self.assertEqual(self.attendance.hours_rendered, 8)
 

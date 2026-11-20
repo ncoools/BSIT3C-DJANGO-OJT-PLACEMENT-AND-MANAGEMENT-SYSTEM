@@ -412,6 +412,9 @@ def student_time_in(request):
         defaults={'time_in': now, 'status': Attendance.Status.PRESENT},
     )
     if not created:
+        if record.verified:
+            messages.error(request, 'This attendance record is already verified and cannot be changed.')
+            return redirect('student_dashboard')
         record.time_in = now
         record.status = Attendance.Status.PRESENT
         record.save()
@@ -446,6 +449,9 @@ def student_time_out(request):
         messages.success(request, f'Time out recorded at {now.strftime("%H:%M")}. Hours auto-calculated.')
         return redirect('student_dashboard')
 
+    if record.verified:
+        messages.error(request, 'This attendance record is already verified and cannot be changed.')
+        return redirect('student_dashboard')
     record.time_out = now
     record.save()  # hours_rendered auto-calculated in model save()
     messages.success(request, f'Time out recorded at {now.strftime("%H:%M")}. Hours auto-calculated.')
