@@ -17,6 +17,7 @@ from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db.models import Count, Sum, Q
 from django.db.models.functions import TruncMonth
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
@@ -374,6 +375,125 @@ def home(request):
     return render(request, 'home.html', context)
 
 
+def _student_active_placement(student):
+    return student.placements.filter(
+        status=Placement.Status.IN_PROGRESS,
+    ).order_by('-start_date').first()
+
+
+def _attendance_status(record, active_placement):
+    """Build the live attendance state shown on the student dashboard."""
+    status = {
+        'key': 'no_placement',
+        'label': 'No active placement',
+        'detail': 'Ask your coordinator to assign you to an active placement.',
+        'time_in': '',
+        'time_out': '',
+        'hours': '',
+        'verified': False,
+        'elapsed_seconds': 0,
+        'can_time_in': False,
+        'can_time_out': False,
+    }
+    if not active_placement:
+        return status
+
+    status['can_time_in'] = True
+    if not record or not record.time_in:
+        status.update({
+            'key': 'not_started',
+            'label': 'Not clocked in',
+            'detail': 'Press Time In to start your OJT day.',
+        })
+        return status
+
+    status['time_in'] = record.time_in.strftime('%H:%M')
+    status['time_out'] = record.time_out.strftime('%H:%M') if record.time_out else ''
+    status['hours'] = str(record.hours_rendered or '') if record.time_out else ''
+    status['verified'] = record.verified
+    status['can_time_in'] = False
+
+    if record.verified:
+        status.update({
+            'key': 'verified',
+            'label': 'Verified',
+            'detail': f'{status["hours"]} hours verified by your supervisor.' if status['hours'] else 'Attendance verified by your supervisor.',
+        })
+        return status
+
+    if not record.time_out:
+        now = timezone.localtime()
+        start = datetime.combine(timezone.localdate(), record.time_in)
+        current = datetime.combine(timezone.localdate(), now.time().replace(microsecond=0))
+        if current < start:
+            current += timedelta(days=1)
+        status.update({
+            'key': 'on_duty',
+            'label': 'On duty',
+            'detail': f'Clocked in at {status["time_in"]}. Time Out when you finish.',
+            'can_time_out': True,
+            'elapsed_seconds': max(0, int((current - start).total_seconds())),
+        })
+        return status
+
+    status.update({
+        'key': 'completed',
+        'label': 'Completed for today',
+        'detail': f'Clocked out at {status["time_out"]}. {status["hours"]} hours recorded.',
+    })
+    return status
+
+
+def _process_student_time_action(request, action):
+    """Record a time in/out action and return (record, placement, message, ok)."""
+    student = Student.objects.filter(email__iexact=(request.user.email or '').strip()).first()
+    if not student:
+        return None, None, 'No student profile is linked to this account.', False
+
+    placement = _student_active_placement(student)
+    if not placement:
+        return None, None, 'No active placement found.', False
+
+    today = timezone.localdate()
+    now = timezone.localtime().time().replace(microsecond=0)
+    record = Attendance.objects.filter(placement=placement, attendance_date=today).first()
+
+    if record and record.verified:
+        return record, placement, 'This attendance record is already verified and cannot be changed.', False
+
+    if action == 'in':
+        if record and record.time_in:
+            return record, placement, 'You are already timed in for today.', False
+        if record:
+            record.time_in = now
+            record.status = Attendance.Status.PRESENT
+            record.save()
+        else:
+            record = Attendance.objects.create(
+                placement=placement,
+                attendance_date=today,
+                time_in=now,
+                status=Attendance.Status.PRESENT,
+            )
+        return record, placement, f'Time in recorded at {now.strftime("%H:%M")}.', True
+
+    if not record or not record.time_in:
+        return record, placement, 'Time in first before timing out.', False
+    if record.time_out:
+        return record, placement, 'You are already timed out for today.', False
+
+    record.time_out = now
+    record.save()  # hours_rendered auto-calculated in model save()
+    return record, placement, f'Time out recorded at {now.strftime("%H:%M")}. Hours auto-calculated.', True
+
+
+def _time_action_response(record, placement, message, ok):
+    payload = _attendance_status(record, placement)
+    payload['message'] = message
+    payload['ok'] = ok
+    return JsonResponse(payload, status=200 if ok else 400)
+
+
 @login_required(login_url='login')
 def student_dashboard(request):
     email = getattr(request.user, 'email', '') or ''
@@ -388,6 +508,14 @@ def student_dashboard(request):
         .select_related('company', 'supervisor')
         .order_by('-start_date')
     )
+
+    active_placement = _student_active_placement(student)
+    today_record = None
+    if active_placement:
+        today_record = Attendance.objects.filter(
+            placement=active_placement,
+            attendance_date=timezone.localdate(),
+        ).first()
 
     required_hours = sum(
         placement.required_hours
@@ -451,6 +579,7 @@ def student_dashboard(request):
         'from_date': from_date,
         'to_date': to_date,
         'hours_pct': round((completed_hours / required_hours * 100), 1) if required_hours else 0,
+        'attendance_status': _attendance_status(today_record, active_placement),
         'dashboard_alerts': student_alerts(student),
     }
 
@@ -460,67 +589,20 @@ def student_dashboard(request):
 @login_required(login_url='login')
 @require_POST
 def student_time_in(request):
-    email = getattr(request.user, 'email', '') or ''
-    student = Student.objects.filter(email__iexact=email).first()
-    if not student:
-        return redirect('dashboard')
-
-    placement = student.placements.filter(status=Placement.Status.IN_PROGRESS).order_by('-start_date').first()
-    if not placement:
-        messages.error(request, 'No active placement found.')
-        return redirect('student_dashboard')
-
-    today = timezone.now().date()
-    now = timezone.localtime().time().replace(microsecond=0)
-    record, created = Attendance.objects.get_or_create(
-        placement=placement,
-        attendance_date=today,
-        defaults={'time_in': now, 'status': Attendance.Status.PRESENT},
-    )
-    if not created:
-        if record.verified:
-            messages.error(request, 'This attendance record is already verified and cannot be changed.')
-            return redirect('student_dashboard')
-        record.time_in = now
-        record.status = Attendance.Status.PRESENT
-        record.save()
-    messages.success(request, f'Time in recorded at {record.time_in.strftime("%H:%M")}.')
+    record, placement, message, ok = _process_student_time_action(request, 'in')
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return _time_action_response(record, placement, message, ok)
+    (messages.success if ok else messages.error)(request, message)
     return redirect('student_dashboard')
 
 
 @login_required(login_url='login')
 @require_POST
 def student_time_out(request):
-    email = getattr(request.user, 'email', '') or ''
-    student = Student.objects.filter(email__iexact=email).first()
-    if not student:
-        return redirect('dashboard')
-
-    placement = student.placements.filter(status=Placement.Status.IN_PROGRESS).order_by('-start_date').first()
-    if not placement:
-        messages.error(request, 'No active placement found.')
-        return redirect('student_dashboard')
-
-    today = timezone.now().date()
-    now = timezone.localtime().time().replace(microsecond=0)
-    record = Attendance.objects.filter(placement=placement, attendance_date=today).first()
-    if not record:
-        record = Attendance.objects.create(
-            placement=placement,
-            attendance_date=today,
-            time_in=now,
-            time_out=now,
-            status=Attendance.Status.PRESENT,
-        )
-        messages.success(request, f'Time out recorded at {now.strftime("%H:%M")}. Hours auto-calculated.')
-        return redirect('student_dashboard')
-
-    if record.verified:
-        messages.error(request, 'This attendance record is already verified and cannot be changed.')
-        return redirect('student_dashboard')
-    record.time_out = now
-    record.save()  # hours_rendered auto-calculated in model save()
-    messages.success(request, f'Time out recorded at {now.strftime("%H:%M")}. Hours auto-calculated.')
+    record, placement, message, ok = _process_student_time_action(request, 'out')
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return _time_action_response(record, placement, message, ok)
+    (messages.success if ok else messages.error)(request, message)
     return redirect('student_dashboard')
 
 
@@ -591,7 +673,7 @@ def supervisor_dashboard(request):
     completed_students = len({p.student_id for p in completed_placements})
 
     # Today's attendance per student (design: Supervisor Portal table)
-    today = timezone.now().date()
+    today = timezone.localdate()
     today_records = {
         record.placement_id: record
         for record in Attendance.objects.filter(

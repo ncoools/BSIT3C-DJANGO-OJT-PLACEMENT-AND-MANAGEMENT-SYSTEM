@@ -1,3 +1,4 @@
+import re
 from datetime import date, time, timedelta
 from unittest.mock import patch
 
@@ -681,11 +682,21 @@ class VerifiedAttendanceClockTests(TestCase):
             status=Placement.Status.IN_PROGRESS,
         )
         self.attendance = Attendance.objects.create(
-            placement=placement, attendance_date=timezone.now().date(),
+            placement=placement, attendance_date=timezone.localdate(),
             time_in=time(9, 0), time_out=time(17, 0),
             status=Attendance.Status.PRESENT, verified=True,
         )
         self.client.force_login(self.user)
+        self.ajax = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+
+    def test_ajax_time_in_rejects_verified_attendance(self):
+        response = self.client.post(reverse('student_time_in'), {}, **self.ajax)
+
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertFalse(data['ok'])
+        self.assertEqual(data['key'], 'verified')
+        self.assertIn('already verified', data['message'])
 
     def test_time_in_does_not_change_verified_attendance(self):
         response = self.client.post(reverse('student_time_in'))
@@ -702,6 +713,95 @@ class VerifiedAttendanceClockTests(TestCase):
         self.attendance.refresh_from_db()
         self.assertEqual(self.attendance.time_out, time(17, 0))
         self.assertEqual(self.attendance.hours_rendered, 8)
+
+
+class StudentTimeClockTests(TestCase):
+    def setUp(self):
+        self.today = timezone.localdate()
+        self.user = get_user_model().objects.create_user(
+            username='liveclock', password='secret1234', email='live@example.com',
+        )
+        self.student = Student.objects.create(
+            student_number='LIVE-001', first_name='Live', last_name='Clock',
+            email='live@example.com',
+        )
+        self.company = Company.objects.create(company_name='Live Co')
+        self.placement = Placement.objects.create(
+            student=self.student, company=self.company,
+            start_date=date(2026, 6, 1), end_date=date(2026, 9, 1),
+            required_hours=500, status=Placement.Status.IN_PROGRESS,
+        )
+        self.client.force_login(self.user)
+        self.ajax = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+
+    def test_ajax_time_in_creates_record_and_returns_live_status(self):
+        response = self.client.post(reverse('student_time_in'), {}, **self.ajax)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['ok'])
+        self.assertEqual(data['key'], 'on_duty')
+        self.assertTrue(data['can_time_out'])
+        self.assertFalse(data['can_time_in'])
+        self.assertIn('Time in recorded', data['message'])
+
+        record = Attendance.objects.get(placement=self.placement, attendance_date=self.today)
+        self.assertEqual(record.time_in.strftime('%H:%M'), data['time_in'])
+        self.assertIsNone(record.time_out)
+
+    def test_ajax_time_out_returns_completed_status_and_hours(self):
+        Attendance.objects.create(
+            placement=self.placement, attendance_date=self.today,
+            time_in=time(8, 0), status=Attendance.Status.PRESENT,
+        )
+
+        response = self.client.post(reverse('student_time_out'), {}, **self.ajax)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['ok'])
+        self.assertEqual(data['key'], 'completed')
+        self.assertEqual(data['time_in'], '08:00')
+        self.assertFalse(data['can_time_out'])
+        self.assertGreater(float(data['hours']), 0)
+        self.assertIn('Time out recorded', data['message'])
+
+    def test_ajax_time_out_without_time_in_is_rejected(self):
+        response = self.client.post(reverse('student_time_out'), {}, **self.ajax)
+
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertFalse(data['ok'])
+        self.assertEqual(data['key'], 'not_started')
+        self.assertEqual(data['message'], 'Time in first before timing out.')
+
+    def test_ajax_time_action_without_active_placement_is_rejected(self):
+        self.placement.status = Placement.Status.COMPLETED
+        self.placement.save(update_fields=['status'])
+
+        response = self.client.post(reverse('student_time_in'), {}, **self.ajax)
+
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertFalse(data['ok'])
+        self.assertEqual(data['key'], 'no_placement')
+        self.assertEqual(data['message'], 'No active placement found.')
+
+    def test_dashboard_shows_live_status_and_disabled_time_out_button(self):
+        response = self.client.get(reverse('student_dashboard'))
+
+        status = response.context['attendance_status']
+        self.assertEqual(status['key'], 'not_started')
+        self.assertTrue(status['can_time_in'])
+        self.assertFalse(status['can_time_out'])
+        self.assertContains(response, 'id="attendance-status"')
+        self.assertContains(response, 'Not clocked in')
+
+        html = response.content.decode()
+        time_in_form = re.search(r'<form id="time-in-form"[\s\S]*?</form>', html).group(0)
+        time_out_form = re.search(r'<form id="time-out-form"[\s\S]*?</form>', html).group(0)
+        self.assertNotIn('disabled', time_in_form)
+        self.assertIn('disabled', time_out_form)
 
 
 class DashboardAlertTests(TestCase):
