@@ -439,7 +439,6 @@ def student_dashboard(request):
         'student_name': f'{student.first_name} {student.last_name}'.strip(),
         'student_number': student.student_number,
         'placements': placements,
-        'completed_placements': [p for p in placements if p.status == Placement.Status.COMPLETED],
         'cancelled_placements': [p for p in placements if p.status == Placement.Status.CANCELLED],
         'pending_requirements': pending_requirements,
         'evaluations': evaluations,

@@ -34,6 +34,15 @@
   .dh-student .stat .d b { color: var(--ok); font-weight: 600; }
   .dh-student .stat .d b.w { color: var(--warn); }
   .dh-student .stat .ic { float: right; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: rgba(247, 195, 37, 0.14); }
+  .dh-student .stat.featured {
+    grid-column: 1 / -1;
+    border-color: rgba(241, 217, 0, 0.55);
+    background: linear-gradient(135deg, rgba(241, 217, 0, 0.13), rgba(255, 255, 255, 0.03));
+    box-shadow: 0 0 0 1px rgba(241, 217, 0, 0.12), 0 10px 24px rgba(0, 0, 0, 0.3);
+  }
+  .dh-student .stat.featured .ic { width: 44px; height: 44px; background: rgba(241, 217, 0, 0.22); }
+  .dh-student .stat.featured .v { color: var(--pri); font-size: 2.6rem; }
+  .dh-student .stat.featured .d { color: var(--ink); font-weight: 600; }
   .dh-student .row { display: grid; grid-template-columns: repeat(12, 1fr); margin-bottom: 16px; }
   .dh-student .c7 { grid-column: span 7; }
   .dh-student .c5 { grid-column: span 5; }
@@ -76,6 +85,7 @@
     .dh-student h1 { font-size: 1.4rem; }
     .dh-student .card { padding: 14px; }
     .dh-student .stat .v { font-size: 1.5rem; }
+    .dh-student .stat.featured .v { font-size: 2rem; }
     .dh-student .row { grid-template-columns: 1fr; }
     .dh-student .c7, .dh-student .c5, .dh-student .c12 { grid-column: 1 / -1; }
     .dh-student .filter-bar input[type="date"] { max-width: none; width: 100%; }
@@ -104,13 +114,7 @@
     {% include 'theme/dashboard_alerts.html' %}
 
     <section class="grid stats">
-      <div class="card stat">
-        <span class="ic">✅</span>
-        <div class="l">Completed</div>
-        <div class="v">{{ completed_placements|length }}</div>
-        <div class="d">Finished OJT</div>
-      </div>
-      <div class="card stat">
+      <div class="card stat featured">
         <span class="ic">☰</span>
         <div class="l">Hours completed</div>
         <div class="v">{{ completed_hours }}</div>

@@ -785,6 +785,9 @@ class DashboardAlertTests(TestCase):
         self.assertContains(response, 'Attendance awaiting verification')
         self.assertNotContains(response, 'Active placements')
         self.assertNotContains(response, 'Currently on OJT')
+        self.assertNotContains(response, 'Finished OJT')
+        self.assertContains(response, 'card stat featured')
+        self.assertContains(response, 'Hours completed')
 
     def test_supervisor_dashboard_shows_live_alerts(self):
         self.client.force_login(self.supervisor_user)
