@@ -8,7 +8,7 @@
       <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <div class="text-secondary small mb-2">Hours rendered are calculated automatically from time in / time out.</div>
+        <div class="text-secondary small mb-2">Hours rendered are calculated automatically from morning and afternoon time in / time out.</div>
         <div class="d-flex gap-2">
           <button class="btn btn-primary" type="submit">Save attendance</button>
           <a class="btn btn-outline-secondary" href="{% url 'supervisor_dashboard' %}">Cancel</a>

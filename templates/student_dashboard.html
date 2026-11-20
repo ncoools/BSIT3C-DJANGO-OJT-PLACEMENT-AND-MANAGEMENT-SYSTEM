@@ -77,7 +77,10 @@
   .dh-student .live-clock-card { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.03); margin-bottom: 14px; }
   .dh-student .live-clock { font-size: 2.4rem; font-weight: 800; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; color: var(--pri); line-height: 1; }
   .dh-student .live-clock-label { font-size: 11px; color: var(--mute); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
-  .dh-student .live-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .dh-student .live-actions { display: flex; flex-direction: column; gap: 10px; }
+  .dh-student .session-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .dh-student .session-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); min-width: 78px; }
+  .dh-student .session-time { font-size: 12px; color: var(--mute); min-width: 96px; font-variant-numeric: tabular-nums; }
   .dh-student .btn-time { min-width: 120px; padding: 10px 18px; font-weight: 600; }
   .dh-student .attendance-state { min-width: 220px; padding-left: 18px; border-left: 1px solid var(--line); }
   .dh-student .attendance-state-label { font-size: 15px; font-weight: 700; color: var(--ink); }
@@ -102,6 +105,8 @@
     .dh-student .filter-bar input[type="date"] { max-width: none; width: 100%; }
     .dh-student .live-clock { font-size: 2rem; }
     .dh-student .live-actions { width: 100%; }
+    .dh-student .session-label { min-width: 100%; }
+    .dh-student .session-time { min-width: 0; }
     .dh-student .attendance-state { min-width: 0; padding-left: 0; border-left: 0; }
     .dh-student .btn-time { min-width: 0; flex: 1 1 140px; }
   }
@@ -224,14 +229,34 @@
             <div class="elapsed-time" id="elapsed-time">{% if attendance_status.key == 'on_duty' %}--:--:--{% endif %}</div>
           </div>
           <div class="live-actions">
-            <form id="time-in-form" method="post" action="{% url 'student_time_in' %}">
-              {% csrf_token %}
-              <button class="btn btn-primary btn-time" type="submit" {% if not attendance_status.can_time_in %}disabled{% endif %}><i class="fa fa-sign-in-alt me-1"></i>Time In</button>
-            </form>
-            <form id="time-out-form" method="post" action="{% url 'student_time_out' %}">
-              {% csrf_token %}
-              <button class="btn btn-outline-primary btn-time" type="submit" {% if not attendance_status.can_time_out %}disabled{% endif %}><i class="fa fa-sign-out-alt me-1"></i>Time Out</button>
-            </form>
+            <div class="session-row">
+              <span class="session-label">Morning</span>
+              <span class="session-time">{% if attendance_status.sessions.am.time_in %}{{ attendance_status.sessions.am.time_in }}{% if attendance_status.sessions.am.time_out %} – {{ attendance_status.sessions.am.time_out }}{% endif %}{% else %}—{% endif %}</span>
+              <form id="time-in-form" method="post" action="{% url 'student_time_in' %}">
+                {% csrf_token %}
+                <input type="hidden" name="session" value="am">
+                <button class="btn btn-primary btn-time" type="submit" {% if not attendance_status.sessions.am.can_time_in %}disabled{% endif %}><i class="fa fa-sign-in-alt me-1"></i>Time In</button>
+              </form>
+              <form id="time-out-form" method="post" action="{% url 'student_time_out' %}">
+                {% csrf_token %}
+                <input type="hidden" name="session" value="am">
+                <button class="btn btn-outline-primary btn-time" type="submit" {% if not attendance_status.sessions.am.can_time_out %}disabled{% endif %}><i class="fa fa-sign-out-alt me-1"></i>Time Out</button>
+              </form>
+            </div>
+            <div class="session-row">
+              <span class="session-label">Afternoon</span>
+              <span class="session-time">{% if attendance_status.sessions.pm.time_in %}{{ attendance_status.sessions.pm.time_in }}{% if attendance_status.sessions.pm.time_out %} – {{ attendance_status.sessions.pm.time_out }}{% endif %}{% else %}—{% endif %}</span>
+              <form id="time-in-pm-form" method="post" action="{% url 'student_time_in' %}">
+                {% csrf_token %}
+                <input type="hidden" name="session" value="pm">
+                <button class="btn btn-primary btn-time" type="submit" {% if not attendance_status.sessions.pm.can_time_in %}disabled{% endif %}><i class="fa fa-sign-in-alt me-1"></i>Time In</button>
+              </form>
+              <form id="time-out-pm-form" method="post" action="{% url 'student_time_out' %}">
+                {% csrf_token %}
+                <input type="hidden" name="session" value="pm">
+                <button class="btn btn-outline-primary btn-time" type="submit" {% if not attendance_status.sessions.pm.can_time_out %}disabled{% endif %}><i class="fa fa-sign-out-alt me-1"></i>Time Out</button>
+              </form>
+            </div>
           </div>
           <div id="attendance-feedback" class="attendance-feedback" aria-live="polite"></div>
         </div>
@@ -265,8 +290,10 @@
               <tr>
                 <th>Date</th>
                 <th>Company</th>
-                <th>Time in</th>
-                <th>Time out</th>
+                <th>AM in</th>
+                <th>AM out</th>
+                <th>PM in</th>
+                <th>PM out</th>
                 <th>Hours</th>
                 <th>Status</th>
                 <th>Verified</th>
@@ -279,13 +306,15 @@
                 <td>{{ record.placement.company.company_name }}</td>
                 <td>{{ record.time_in|time:"H:i" }}</td>
                 <td>{{ record.time_out|time:"H:i" }}</td>
+                <td>{{ record.time_in_pm|time:"H:i" }}</td>
+                <td>{{ record.time_out_pm|time:"H:i" }}</td>
                 <td>{{ record.hours_rendered }}</td>
                 <td><span class="pill ok">{{ record.status }}</span></td>
                 <td>{% if record.verified %}<span class="pill ok">✓ Verified</span>{% else %}<span class="pill wa">Pending</span>{% endif %}</td>
               </tr>
               {% empty %}
               <tr>
-                <td colspan="7">No attendance records yet.</td>
+                <td colspan="9">No attendance records yet.</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -374,7 +403,7 @@
 
     document.addEventListener('submit', function (event) {
       var form = event.target;
-      if (form && (form.id === 'time-in-form' || form.id === 'time-out-form')) {
+      if (form && ['time-in-form', 'time-out-form', 'time-in-pm-form', 'time-out-pm-form'].indexOf(form.id) !== -1) {
         event.preventDefault();
         submitTime(form);
       }

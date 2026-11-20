@@ -381,8 +381,8 @@ def _student_active_placement(student):
     ).order_by('-start_date').first()
 
 
-def _attendance_status(record, active_placement, has_planned_placement=False):
-    """Build the live attendance state shown on the student dashboard."""
+def _base_attendance_status(record, active_placement, has_planned_placement=False):
+    """Build the overall attendance state (mirrors the morning session)."""
     detail = (
         'Your placement is scheduled but not active yet. Ask your coordinator to set it to In progress.'
         if has_planned_placement
@@ -404,7 +404,9 @@ def _attendance_status(record, active_placement, has_planned_placement=False):
         return status
 
     status['can_time_in'] = True
-    if not record or not record.time_in:
+    has_morning = bool(record and record.time_in)
+    has_afternoon = bool(record and record.time_in_pm)
+    if not record or not (has_morning or has_afternoon):
         status.update({
             'key': 'not_started',
             'label': 'Not clocked in',
@@ -412,9 +414,15 @@ def _attendance_status(record, active_placement, has_planned_placement=False):
         })
         return status
 
-    status['time_in'] = record.time_in.strftime('%H:%M')
-    status['time_out'] = record.time_out.strftime('%H:%M') if record.time_out else ''
-    status['hours'] = str(record.hours_rendered or '') if record.time_out else ''
+    session_in = record.time_in if has_morning else record.time_in_pm
+    session_out = record.time_out if has_morning else record.time_out_pm
+    status['time_in'] = session_in.strftime('%H:%M')
+    status['time_out'] = session_out.strftime('%H:%M') if session_out else ''
+    status['hours'] = (
+        f'{float(record.hours_rendered or 0):.2f}'
+        if (record.time_out or record.time_out_pm)
+        else ''
+    )
     status['verified'] = record.verified
     status['can_time_in'] = False
 
@@ -426,9 +434,9 @@ def _attendance_status(record, active_placement, has_planned_placement=False):
         })
         return status
 
-    if not record.time_out:
+    if not session_out:
         now = timezone.localtime()
-        start = datetime.combine(timezone.localdate(), record.time_in)
+        start = datetime.combine(timezone.localdate(), session_in)
         current = datetime.combine(timezone.localdate(), now.time().replace(microsecond=0))
         if current < start:
             current += timedelta(days=1)
@@ -449,7 +457,87 @@ def _attendance_status(record, active_placement, has_planned_placement=False):
     return status
 
 
-def _process_student_time_action(request, action):
+def _session_status(record, in_field, out_field, label):
+    """Build the live state for one session (morning or afternoon)."""
+    session = {
+        'key': 'not_started',
+        'label': f'{label} not started',
+        'detail': f'Press Time In to start the {label.lower()} session.',
+        'time_in': '',
+        'time_out': '',
+        'can_time_in': True,
+        'can_time_out': False,
+        'elapsed_seconds': 0,
+    }
+    if not record:
+        return session
+
+    time_in = getattr(record, in_field)
+    time_out = getattr(record, out_field)
+    if not time_in:
+        return session
+
+    session['time_in'] = time_in.strftime('%H:%M')
+    session['time_out'] = time_out.strftime('%H:%M') if time_out else ''
+    session['can_time_in'] = False
+    if time_out:
+        session.update({
+            'key': 'completed',
+            'label': f'{label} completed',
+            'detail': f'Clocked out at {session["time_out"]}.',
+        })
+        return session
+
+    now = timezone.localtime()
+    start = datetime.combine(timezone.localdate(), time_in)
+    current = datetime.combine(timezone.localdate(), now.time().replace(microsecond=0))
+    if current < start:
+        current += timedelta(days=1)
+    session.update({
+        'key': 'on_duty',
+        'label': f'{label} in progress',
+        'detail': f'Clocked in at {session["time_in"]}. Time Out when you finish.',
+        'can_time_out': True,
+        'elapsed_seconds': max(0, int((current - start).total_seconds())),
+    })
+    return session
+
+
+def _attendance_status(record, active_placement, has_planned_placement=False):
+    """Overall status plus separate morning/afternoon session states."""
+    status = _base_attendance_status(record, active_placement, has_planned_placement)
+    if not active_placement:
+        disabled = {
+            'key': 'no_placement',
+            'label': status['label'],
+            'detail': status['detail'],
+            'time_in': '',
+            'time_out': '',
+            'can_time_in': False,
+            'can_time_out': False,
+            'elapsed_seconds': 0,
+        }
+        status['sessions'] = {'am': dict(disabled), 'pm': dict(disabled)}
+        return status
+
+    status['sessions'] = {
+        'am': _session_status(record, 'time_in', 'time_out', 'Morning'),
+        'pm': _session_status(record, 'time_in_pm', 'time_out_pm', 'Afternoon'),
+    }
+    afternoon = status['sessions']['pm']
+    if afternoon['key'] == 'on_duty' and status['sessions']['am']['key'] != 'on_duty':
+        status.update({
+            'key': 'on_duty',
+            'label': 'On duty (afternoon)',
+            'detail': afternoon['detail'],
+            'elapsed_seconds': afternoon['elapsed_seconds'],
+            'can_time_in': False,
+            'can_time_out': False,
+        })
+    return status
+
+
+def _process_student_time_action(request, action, session='am'):
     """Record a time in/out action and return (record, placement, message, ok)."""
     student = Student.objects.filter(email__iexact=(request.user.email or '').strip()).first()
     if not student:
@@ -466,30 +554,44 @@ def _process_student_time_action(request, action):
     if record and record.verified:
         return record, placement, 'This attendance record is already verified and cannot be changed.', False
 
+    is_pm = session == 'pm'
+    in_field = 'time_in_pm' if is_pm else 'time_in'
+    out_field = 'time_out_pm' if is_pm else 'time_out'
+    clock = now.strftime('%H:%M')
+
     if action == 'in':
-        if record and record.time_in:
-            return record, placement, 'You are already timed in for today.', False
+        if record and getattr(record, in_field):
+            message = 'You are already timed in for the afternoon.' if is_pm else 'You are already timed in for today.'
+            return record, placement, message, False
         if record:
-            record.time_in = now
+            setattr(record, in_field, now)
             record.status = Attendance.Status.PRESENT
             record.save()
         else:
             record = Attendance.objects.create(
                 placement=placement,
                 attendance_date=today,
-                time_in=now,
                 status=Attendance.Status.PRESENT,
+                **{in_field: now},
             )
-        return record, placement, f'Time in recorded at {now.strftime("%H:%M")}.', True
+        message = f'Afternoon time in recorded at {clock}.' if is_pm else f'Time in recorded at {clock}.'
+        return record, placement, message, True
 
-    if not record or not record.time_in:
-        return record, placement, 'Time in first before timing out.', False
-    if record.time_out:
-        return record, placement, 'You are already timed out for today.', False
+    if not record or not getattr(record, in_field):
+        message = 'Afternoon time in first before timing out.' if is_pm else 'Time in first before timing out.'
+        return record, placement, message, False
+    if getattr(record, out_field):
+        message = 'You are already timed out for the afternoon.' if is_pm else 'You are already timed out for today.'
+        return record, placement, message, False
 
-    record.time_out = now
-    record.save()  # hours_rendered auto-calculated in model save()
-    return record, placement, f'Time out recorded at {now.strftime("%H:%M")}. Hours auto-calculated.', True
+    setattr(record, out_field, now)
+    record.save()  # hours_rendered auto-combines both sessions
+    message = (
+        f'Afternoon time out recorded at {clock}. Hours updated.'
+        if is_pm
+        else f'Time out recorded at {clock}. Hours auto-calculated.'
+    )
+    return record, placement, message, True
 
 
 def _time_action_response(record, placement, message, ok):
@@ -595,7 +697,9 @@ def student_dashboard(request):
 @login_required(login_url='login')
 @require_POST
 def student_time_in(request):
-    record, placement, message, ok = _process_student_time_action(request, 'in')
+    record, placement, message, ok = _process_student_time_action(
+        request, 'in', request.POST.get('session', 'am')
+    )
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return _time_action_response(record, placement, message, ok)
     (messages.success if ok else messages.error)(request, message)
@@ -605,7 +709,9 @@ def student_time_in(request):
 @login_required(login_url='login')
 @require_POST
 def student_time_out(request):
-    record, placement, message, ok = _process_student_time_action(request, 'out')
+    record, placement, message, ok = _process_student_time_action(
+        request, 'out', request.POST.get('session', 'am')
+    )
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return _time_action_response(record, placement, message, ok)
     (messages.success if ok else messages.error)(request, message)
@@ -695,9 +801,9 @@ def supervisor_dashboard(request):
         if rec:
             if rec.status == Attendance.Status.ABSENT:
                 status = 'absent'
-            elif rec.time_out:
+            elif rec.time_out or rec.time_out_pm:
                 status = 'completed'
-            elif rec.time_in:
+            elif rec.time_in or rec.time_in_pm:
                 status = 'on-duty'
             else:
                 status = 'not-started'
@@ -717,6 +823,8 @@ def supervisor_dashboard(request):
             'status_label': status_label,
             'time_in': rec.time_in if rec else None,
             'time_out': rec.time_out if rec else None,
+            'time_in_pm': rec.time_in_pm if rec else None,
+            'time_out_pm': rec.time_out_pm if rec else None,
             'hours': rec.hours_rendered if rec else None,
             'hours_display': hours_display,
             'attendance_pk': rec.pk if rec else None,

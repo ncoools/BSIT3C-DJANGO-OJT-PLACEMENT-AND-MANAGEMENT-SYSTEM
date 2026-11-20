@@ -200,6 +200,43 @@ class PlacementPermissionTests(TestCase):
         self.assertContains(response, 'Jamie Doe')
         self.assertNotContains(response, 'Jordan Roe')
 
+    def test_create_form_lists_only_students_without_a_placement(self):
+        unplaced = Student.objects.create(
+            student_number='2026-003', first_name='Free', last_name='Student',
+        )
+        self._login(self.admin_user)
+        response = self.client.get(reverse('placements:create'))
+
+        choices = list(response.context['form'].fields['student'].queryset)
+        self.assertIn(unplaced, choices)
+        self.assertNotIn(self.student, choices)
+        self.assertNotIn(Placement.objects.get(pk=self.other_placement.pk).student, choices)
+
+    def test_edit_form_keeps_the_current_student_available(self):
+        self._login(self.admin_user)
+        response = self.client.get(reverse('placements:update', args=[self.placement.pk]))
+
+        choices = list(response.context['form'].fields['student'].queryset)
+        self.assertIn(self.student, choices)
+        self.assertNotIn(Placement.objects.get(pk=self.other_placement.pk).student, choices)
+
+    def test_admin_cannot_place_a_student_who_is_already_placed(self):
+        self._login(self.admin_user)
+        other_student = Placement.objects.get(pk=self.other_placement.pk).student
+        response = self.client.post(reverse('placements:create'), {
+            'student': other_student.pk,
+            'company': self.company.pk,
+            'supervisor': self.supervisor.pk,
+            'start_date': '2026-06-01',
+            'end_date': '2026-09-01',
+            'required_hours': 500,
+            'status': Placement.Status.PLANNED,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('already placed', response.context['form'].errors['student'][0])
+        self.assertEqual(Placement.objects.filter(student=other_student).count(), 1)
+
     def test_supervisor_list_hides_assignment_actions(self):
         self._login(self.supervisor_user)
         html = self.client.get(reverse('placements:list')).content.decode()

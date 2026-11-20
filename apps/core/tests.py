@@ -1,5 +1,5 @@
 import re
-from datetime import date, time, timedelta
+from datetime import date, datetime, time, timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -978,6 +978,156 @@ class StudentTimeClockTests(TestCase):
         time_out_form = re.search(r'<form id="time-out-form"[\s\S]*?</form>', html).group(0)
         self.assertNotIn('disabled', time_in_form)
         self.assertIn('disabled', time_out_form)
+
+
+class AfternoonAttendanceTests(TestCase):
+    def setUp(self):
+        self.today = timezone.localdate()
+        self.user = get_user_model().objects.create_user(
+            username='pmclock', password='secret1234', email='pm@example.com',
+        )
+        self.student = Student.objects.create(
+            student_number='PM-001', first_name='Post', last_name='Meridian',
+            email='pm@example.com',
+        )
+        self.company = Company.objects.create(company_name='PM Co')
+        self.placement = Placement.objects.create(
+            student=self.student, company=self.company,
+            start_date=date(2026, 6, 1), end_date=date(2026, 9, 1),
+            required_hours=500, status=Placement.Status.IN_PROGRESS,
+        )
+        self.client.force_login(self.user)
+        self.ajax = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+
+    def _fixed_localtime(self, clock):
+        return patch('apps.core.views.timezone.localtime', return_value=timezone.make_aware(
+            datetime.combine(self.today, clock)
+        ))
+
+    def test_afternoon_time_in_records_pm_fields(self):
+        response = self.client.post(reverse('student_time_in'), {'session': 'pm'}, **self.ajax)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['ok'])
+        self.assertIn('Afternoon time in recorded', data['message'])
+        self.assertEqual(data['sessions']['pm']['key'], 'on_duty')
+        self.assertTrue(data['sessions']['pm']['can_time_out'])
+        self.assertTrue(data['sessions']['am']['can_time_in'])
+
+        record = Attendance.objects.get(placement=self.placement, attendance_date=self.today)
+        self.assertIsNotNone(record.time_in_pm)
+        self.assertIsNone(record.time_in)
+
+    def test_afternoon_time_out_combines_morning_and_afternoon_hours(self):
+        Attendance.objects.create(
+            placement=self.placement, attendance_date=self.today,
+            time_in=time(8, 0), time_out=time(12, 0), time_in_pm=time(13, 0),
+            status=Attendance.Status.PRESENT,
+        )
+
+        with self._fixed_localtime(time(17, 0)):
+            response = self.client.post(reverse('student_time_out'), {'session': 'pm'}, **self.ajax)
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['ok'])
+        self.assertIn('Afternoon time out recorded', data['message'])
+        self.assertEqual(data['hours'], '8.00')
+
+        record = Attendance.objects.get(placement=self.placement, attendance_date=self.today)
+        self.assertEqual(record.time_out_pm, time(17, 0))
+        self.assertEqual(float(record.hours_rendered), 8.0)
+
+    def test_afternoon_time_out_without_afternoon_time_in_is_rejected(self):
+        response = self.client.post(reverse('student_time_out'), {'session': 'pm'}, **self.ajax)
+
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertFalse(data['ok'])
+        self.assertEqual(data['message'], 'Afternoon time in first before timing out.')
+        self.assertEqual(data['sessions']['pm']['key'], 'not_started')
+
+    def test_afternoon_action_cannot_change_verified_attendance(self):
+        record = Attendance.objects.create(
+            placement=self.placement, attendance_date=self.today,
+            time_in=time(8, 0), time_out=time(12, 0),
+            time_in_pm=time(13, 0), time_out_pm=time(17, 0),
+            verified=True, status=Attendance.Status.PRESENT,
+        )
+
+        response = self.client.post(reverse('student_time_in'), {'session': 'pm'}, **self.ajax)
+
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertFalse(data['ok'])
+        self.assertEqual(data['key'], 'verified')
+        record.refresh_from_db()
+        self.assertEqual(record.time_in_pm, time(13, 0))
+        self.assertEqual(record.time_out_pm, time(17, 0))
+
+    def test_afternoon_action_without_active_placement_is_rejected(self):
+        self.placement.status = Placement.Status.COMPLETED
+        self.placement.save(update_fields=['status'])
+
+        response = self.client.post(reverse('student_time_in'), {'session': 'pm'}, **self.ajax)
+
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertFalse(data['ok'])
+        self.assertEqual(data['key'], 'no_placement')
+        self.assertEqual(data['message'], 'No active placement found.')
+
+    def test_dashboard_afternoon_buttons_reflect_session_state(self):
+        Attendance.objects.create(
+            placement=self.placement, attendance_date=self.today,
+            time_in=time(8, 0), time_out=time(12, 0),
+            status=Attendance.Status.PRESENT,
+        )
+
+        response = self.client.get(reverse('student_dashboard'))
+        status = response.context['attendance_status']
+
+        self.assertEqual(status['sessions']['am']['key'], 'completed')
+        self.assertEqual(status['sessions']['pm']['key'], 'not_started')
+        self.assertTrue(status['sessions']['pm']['can_time_in'])
+        self.assertFalse(status['sessions']['pm']['can_time_out'])
+
+        html = response.content.decode()
+        pm_in = re.search(r'<form id="time-in-pm-form"[\s\S]*?</form>', html).group(0)
+        pm_out = re.search(r'<form id="time-out-pm-form"[\s\S]*?</form>', html).group(0)
+        self.assertIn('name="session" value="pm"', pm_in)
+        self.assertIn('name="session" value="pm"', pm_out)
+        self.assertNotIn('disabled', pm_in)
+        self.assertIn('disabled', pm_out)
+
+    def test_pm_only_completed_record_reports_completed(self):
+        Attendance.objects.create(
+            placement=self.placement, attendance_date=self.today,
+            time_in_pm=time(13, 0), time_out_pm=time(17, 0),
+            status=Attendance.Status.PRESENT,
+        )
+
+        response = self.client.get(reverse('student_dashboard'))
+        status = response.context['attendance_status']
+
+        self.assertEqual(status['key'], 'completed')
+        self.assertEqual(status['hours'], '4.00')
+        self.assertEqual(status['sessions']['pm']['key'], 'completed')
+
+    def test_dashboard_afternoon_in_progress_keeps_overall_clock_live(self):
+        Attendance.objects.create(
+            placement=self.placement, attendance_date=self.today,
+            time_in_pm=time(13, 30), status=Attendance.Status.PRESENT,
+        )
+
+        with self._fixed_localtime(time(14, 0)):
+            response = self.client.get(reverse('student_dashboard'))
+        status = response.context['attendance_status']
+
+        self.assertEqual(status['key'], 'on_duty')
+        self.assertIn('afternoon', status['label'].lower())
+        self.assertEqual(status['elapsed_seconds'], 1800)
 
 
 class DashboardAlertTests(TestCase):

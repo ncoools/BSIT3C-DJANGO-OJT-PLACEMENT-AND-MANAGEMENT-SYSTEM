@@ -35,7 +35,7 @@ from .models import (
 
 def _log_attendance_change(attendance, editor, reason, old_values, creation=False):
     """Write an audit log entry for an attendance edit/create."""
-    fields = ['attendance_date', 'time_in', 'time_out', 'status', 'hours_rendered', 'verified']
+    fields = ['attendance_date', 'time_in', 'time_out', 'time_in_pm', 'time_out_pm', 'status', 'hours_rendered', 'verified']
     if creation:
         changes = ', '.join(f'{field}={getattr(attendance, field)}' for field in fields if getattr(attendance, field) is not None)
     else:
@@ -403,6 +403,8 @@ def placement_attendance_update(request, pk, attendance_pk):
         'attendance_date': attendance.attendance_date,
         'time_in': attendance.time_in,
         'time_out': attendance.time_out,
+        'time_in_pm': attendance.time_in_pm,
+        'time_out_pm': attendance.time_out_pm,
         'status': attendance.status,
         'hours_rendered': attendance.hours_rendered,
         'verified': attendance.verified,
@@ -435,6 +437,8 @@ def placement_attendance_delete(request, pk, attendance_pk):
         'attendance_date': attendance.attendance_date,
         'time_in': attendance.time_in,
         'time_out': attendance.time_out,
+        'time_in_pm': attendance.time_in_pm,
+        'time_out_pm': attendance.time_out_pm,
         'status': attendance.status,
         'hours_rendered': attendance.hours_rendered,
         'verified': attendance.verified,
@@ -456,6 +460,8 @@ def placement_attendance_verify(request, pk, attendance_pk):
             'attendance_date': attendance.attendance_date,
             'time_in': attendance.time_in,
             'time_out': attendance.time_out,
+            'time_in_pm': attendance.time_in_pm,
+            'time_out_pm': attendance.time_out_pm,
             'status': attendance.status,
             'hours_rendered': attendance.hours_rendered,
             'verified': attendance.verified,

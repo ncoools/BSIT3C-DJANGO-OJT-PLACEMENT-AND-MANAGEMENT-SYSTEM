@@ -84,6 +84,8 @@ class Attendance(models.Model):
     attendance_date = models.DateField()
     time_in = models.TimeField(null=True, blank=True)
     time_out = models.TimeField(null=True, blank=True)
+    time_in_pm = models.TimeField(null=True, blank=True)
+    time_out_pm = models.TimeField(null=True, blank=True)
     hours_rendered = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
     status = models.CharField(max_length=7, choices=Status.choices, default=Status.PRESENT)
     verified = models.BooleanField(default=False, help_text='Supervisor has verified this record. Only verified hours count toward OJT completion.')
@@ -91,16 +93,21 @@ class Attendance(models.Model):
     class Meta:
         db_table = 'attendance'
 
+    def _session_hours(self, time_in, time_out):
+        if not time_in or not time_out:
+            return 0.0
+        start = datetime.combine(self.attendance_date or date.today(), time_in)
+        end = datetime.combine(self.attendance_date or date.today(), time_out)
+        if end < start:
+            # Overnight shift: time_out is on the next day
+            end += timedelta(days=1)
+        return (end - start).total_seconds() / 3600
+
     def save(self, *args, **kwargs):
-        if self.time_in and self.time_out:
-            start = datetime.combine(self.attendance_date or date.today(), self.time_in)
-            end = datetime.combine(self.attendance_date or date.today(), self.time_out)
-            if end < start:
-                # Overnight shift: time_out is on the next day
-                end += timedelta(days=1)
-            delta = end - start
-            total_hours = delta.total_seconds() / 3600
-            self.hours_rendered = round(total_hours, 2)
+        morning = self._session_hours(self.time_in, self.time_out)
+        afternoon = self._session_hours(self.time_in_pm, self.time_out_pm)
+        if morning or afternoon:
+            self.hours_rendered = round(morning + afternoon, 2)
         super().save(*args, **kwargs)
 
     def __str__(self):

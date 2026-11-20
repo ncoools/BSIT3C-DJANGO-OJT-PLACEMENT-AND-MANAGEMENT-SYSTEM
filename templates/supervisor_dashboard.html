@@ -175,16 +175,18 @@
           <div class="tw">
             <table class="students-table">
               <colgroup>
-                <col style="width: 22%">
-                <col style="width: 20%">
-                <col style="width: 14%">
-                <col style="width: 11%">
-                <col style="width: 11%">
+                <col style="width: 18%">
+                <col style="width: 16%">
                 <col style="width: 10%">
+                <col style="width: 9%">
+                <col style="width: 9%">
+                <col style="width: 9%">
+                <col style="width: 9%">
+                <col style="width: 8%">
                 <col style="width: 12%">
               </colgroup>
               <thead>
-                <tr><th>Student</th><th>Company</th><th class="c-center">Status</th><th class="c-center">Time in</th><th class="c-center">Time out</th><th class="c-center">Hours</th><th class="c-right">Attendance</th></tr>
+                <tr><th>Student</th><th>Company</th><th class="c-center">Status</th><th class="c-center">AM in</th><th class="c-center">AM out</th><th class="c-center">PM in</th><th class="c-center">PM out</th><th class="c-center">Hours</th><th class="c-right">Attendance</th></tr>
               </thead>
               <tbody id="rows">
                 {% for row in today_rows %}
@@ -196,6 +198,8 @@
                     data-status="{{ row.status }}"
                     data-tin="{% if row.time_in %}{{ row.time_in|time:'H:i' }}{% endif %}"
                     data-tout="{% if row.time_out %}{{ row.time_out|time:'H:i' }}{% endif %}"
+                    data-tin-pm="{% if row.time_in_pm %}{{ row.time_in_pm|time:'H:i' }}{% endif %}"
+                    data-tout-pm="{% if row.time_out_pm %}{{ row.time_out_pm|time:'H:i' }}{% endif %}"
                     data-hours="{{ row.hours_display }}"
                     data-placement-pk="{{ row.placement.pk }}"
                     data-attendance-pk="{{ row.attendance_pk|default:'' }}"
@@ -205,11 +209,13 @@
                   <td class="c-center"><span class="pill {{ row.status }}">{{ row.status_label }}</span></td>
                   <td class="c-center">{% if row.time_in %}{{ row.time_in|time:"H:i" }}{% else %}—{% endif %}</td>
                   <td class="c-center">{% if row.time_out %}{{ row.time_out|time:"H:i" }}{% else %}—{% endif %}</td>
+                  <td class="c-center">{% if row.time_in_pm %}{{ row.time_in_pm|time:"H:i" }}{% else %}—{% endif %}</td>
+                  <td class="c-center">{% if row.time_out_pm %}{{ row.time_out_pm|time:"H:i" }}{% else %}—{% endif %}</td>
                   <td class="c-center">{{ row.hours_display }}</td>
                   <td class="c-right"><button class="mg{% if forloop.first %} lime{% endif %}" type="button">Manage <i class="fa fa-arrow-right"></i></button></td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="7" class="empty">No students assigned yet. An administrator assigns students to your dashboard.</td></tr>
+                <tr><td colspan="9" class="empty">No students assigned yet. An administrator assigns students to your dashboard.</td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -251,12 +257,22 @@
           <input type="hidden" name="attendance_date" id="p-date" value="{{ today|date:'Y-m-d' }}">
           <div class="two">
             <div>
-              <label for="p-ti">Time in</label>
+              <label for="p-ti">Morning in</label>
               <div class="in"><input type="time" id="p-ti" name="time_in"><i class="fa fa-clock-o ico"></i></div>
             </div>
             <div>
-              <label for="p-to">Time out</label>
+              <label for="p-to">Morning out</label>
               <div class="in"><input type="time" id="p-to" name="time_out"><i class="fa fa-clock-o ico"></i></div>
+            </div>
+          </div>
+          <div class="two" style="margin-top:12px">
+            <div>
+              <label for="p-ti-pm">Afternoon in</label>
+              <div class="in"><input type="time" id="p-ti-pm" name="time_in_pm"><i class="fa fa-clock-o ico"></i></div>
+            </div>
+            <div>
+              <label for="p-to-pm">Afternoon out</label>
+              <div class="in"><input type="time" id="p-to-pm" name="time_out_pm"><i class="fa fa-clock-o ico"></i></div>
             </div>
           </div>
           <div style="margin-top:12px">
@@ -292,7 +308,7 @@
           <a class="btn pri" id="p-add" href="{% url 'placements:list' %}" style="justify-content:center; width:100%;"><i class="fa fa-plus"></i>Add attendance record</a>
         </div>
 
-        <p class="note">Hours are credited from time in → time out.<br>Every change is saved with your name and timestamp.</p>
+        <p class="note">Hours are credited from morning and afternoon sessions.<br>Every change is saved with your name and timestamp.</p>
       </aside>
     </div>
 
@@ -315,6 +331,8 @@
   var pdate = document.getElementById('pdate');
   var pTi = document.getElementById('p-ti');
   var pTo = document.getElementById('p-to');
+  var pTiPm = document.getElementById('p-ti-pm');
+  var pToPm = document.getElementById('p-to-pm');
   var pStatus = document.getElementById('p-status');
   var pDate = document.getElementById('p-date');
   var pOpen = document.getElementById('p-open');
@@ -357,6 +375,8 @@
     pdate.textContent = 'As of now';
     pTi.value = row.getAttribute('data-tin') || '';
     pTo.value = row.getAttribute('data-tout') || '';
+    pTiPm.value = row.getAttribute('data-tin-pm') || '';
+    pToPm.value = row.getAttribute('data-tout-pm') || '';
     pStatus.value = status === 'absent' ? 'Absent' : 'Present';
     pDate.value = attDate;
 
