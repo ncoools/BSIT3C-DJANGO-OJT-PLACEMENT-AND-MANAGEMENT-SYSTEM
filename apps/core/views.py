@@ -381,12 +381,17 @@ def _student_active_placement(student):
     ).order_by('-start_date').first()
 
 
-def _attendance_status(record, active_placement):
+def _attendance_status(record, active_placement, has_planned_placement=False):
     """Build the live attendance state shown on the student dashboard."""
+    detail = (
+        'Your placement is scheduled but not active yet. Ask your coordinator to set it to In progress.'
+        if has_planned_placement
+        else 'Ask your coordinator to assign you to an active placement.'
+    )
     status = {
         'key': 'no_placement',
         'label': 'No active placement',
-        'detail': 'Ask your coordinator to assign you to an active placement.',
+        'detail': detail,
         'time_in': '',
         'time_out': '',
         'hours': '',
@@ -510,6 +515,7 @@ def student_dashboard(request):
     )
 
     active_placement = _student_active_placement(student)
+    has_planned_placement = any(p.status == Placement.Status.PLANNED for p in placements)
     today_record = None
     if active_placement:
         today_record = Attendance.objects.filter(
@@ -579,7 +585,7 @@ def student_dashboard(request):
         'from_date': from_date,
         'to_date': to_date,
         'hours_pct': round((completed_hours / required_hours * 100), 1) if required_hours else 0,
-        'attendance_status': _attendance_status(today_record, active_placement),
+        'attendance_status': _attendance_status(today_record, active_placement, has_planned_placement),
         'dashboard_alerts': student_alerts(student),
     }
 

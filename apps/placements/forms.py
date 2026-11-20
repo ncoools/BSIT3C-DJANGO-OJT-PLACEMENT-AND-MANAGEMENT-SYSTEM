@@ -13,6 +13,7 @@ class PlacementForm(forms.ModelForm):
             'start_date',
             'end_date',
             'required_hours',
+            'status',
         ]
         widgets = {
             'student': forms.Select(attrs={'class': 'form-select'}),
@@ -21,12 +22,16 @@ class PlacementForm(forms.ModelForm):
             'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'required_hours': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['supervisor'].help_text = (
             'Admin-only: the student will appear on this supervisor\'s dashboard.'
+        )
+        self.fields['status'].help_text = (
+            'Set to "In progress" so the student can Time In and Time Out.'
         )
 
 

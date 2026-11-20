@@ -41,6 +41,7 @@ class PlacementTests(TestCase):
             'start_date': '2026-06-01',
             'end_date': '2026-09-01',
             'required_hours': 500,
+            'status': Placement.Status.PLANNED,
         }
         data.update(overrides)
         return data
@@ -171,6 +172,7 @@ class PlacementPermissionTests(TestCase):
             'start_date': '2026-06-01',
             'end_date': '2026-09-01',
             'required_hours': 500,
+            'status': Placement.Status.PLANNED,
         })
 
         self.assertEqual(response.status_code, 403)
@@ -185,6 +187,7 @@ class PlacementPermissionTests(TestCase):
             'start_date': '2026-06-01',
             'end_date': '2026-09-01',
             'required_hours': 500,
+            'status': Placement.Status.IN_PROGRESS,
         })
 
         self.assertRedirects(response, reverse('placements:list'), fetch_redirect_response=False)

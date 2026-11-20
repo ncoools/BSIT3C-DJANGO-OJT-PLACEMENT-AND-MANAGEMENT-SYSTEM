@@ -230,6 +230,7 @@ class RegistrationTests(TestCase):
             'start_date': '2026-06-01',
             'end_date': '2026-09-01',
             'required_hours': 500,
+            'status': Placement.Status.IN_PROGRESS,
         })
 
         self.assertRedirects(response, reverse('placements:list'), fetch_redirect_response=False)
@@ -274,6 +275,7 @@ class RegistrationTests(TestCase):
             'start_date': '2026-06-01',
             'end_date': '2026-09-01',
             'required_hours': 500,
+            'status': Placement.Status.IN_PROGRESS,
         })
 
         self.assertRedirects(response, reverse('placements:list'), fetch_redirect_response=False)
@@ -764,6 +766,7 @@ class SupervisorStudentConnectionTests(TestCase):
             'start_date': '2026-06-01',
             'end_date': '2026-09-01',
             'required_hours': 500,
+            'status': Placement.Status.IN_PROGRESS,
         })
 
         self.assertRedirects(response, reverse('placements:list'), fetch_redirect_response=False)
@@ -784,6 +787,58 @@ class SupervisorStudentConnectionTests(TestCase):
         self.assertNotIn(reverse('placements:create'), html)
         self.assertNotIn('New placement', html)
         self.assertIn('assigned by an administrator', html)
+
+
+class PlacementActivationTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.admin = User.objects.create_user(username='act-admin', password='secret1234', is_staff=True)
+        self.student_user = User.objects.create_user(
+            username='act-student', password='secret1234', email='act-student@example.com',
+        )
+        Group.objects.get_or_create(name='student')[0].user_set.add(self.student_user)
+        self.student = Student.objects.create(
+            student_number='ACT-001', first_name='Act', last_name='Student',
+            email='act-student@example.com',
+        )
+        self.company = Company.objects.create(company_name='Act Co')
+
+    def test_admin_can_activate_placement_so_student_can_time_in(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('placements:create'), {
+            'student': self.student.pk,
+            'company': self.company.pk,
+            'start_date': '2026-06-01',
+            'end_date': '2026-09-01',
+            'required_hours': 500,
+            'status': Placement.Status.IN_PROGRESS,
+        })
+
+        self.assertRedirects(response, reverse('placements:list'), fetch_redirect_response=False)
+        self.client.force_login(self.student_user)
+        dashboard = self.client.get(reverse('student_dashboard'))
+
+        self.assertEqual(dashboard.context['attendance_status']['key'], 'not_started')
+        self.assertTrue(dashboard.context['attendance_status']['can_time_in'])
+
+        response = self.client.post(reverse('student_time_in'), {}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['ok'])
+
+    def test_planned_placement_explains_why_student_cannot_start(self):
+        Placement.objects.create(
+            student=self.student, company=self.company,
+            start_date=date(2026, 6, 1), end_date=date(2026, 9, 1),
+            required_hours=500, status=Placement.Status.PLANNED,
+        )
+        self.client.force_login(self.student_user)
+
+        dashboard = self.client.get(reverse('student_dashboard'))
+        status = dashboard.context['attendance_status']
+
+        self.assertEqual(status['key'], 'no_placement')
+        self.assertIn('not active yet', status['detail'])
+        self.assertIn('In progress', status['detail'])
 
 
 class VerifiedAttendanceClockTests(TestCase):
