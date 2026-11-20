@@ -75,7 +75,7 @@
 
         <div class="alert alert-info d-flex align-items-start" role="alert">
           <i class="fas fa-info-circle mt-1"></i>
-          <span>We generate a secure initial password from your name and student number. It is shown once after registration, and you must change it at first login.</span>
+          <span>Your student number is generated automatically. We also generate a secure initial password from your name and student number. Both are shown once after registration, and you must change the password at first login.</span>
         </div>
 
         {% if errors %}
@@ -151,23 +151,7 @@
             </div>
           </div>
 
-          <!-- Student Number (used to generate the initial password) -->
-          <div class="mb-3">
-            <label class="form-label required">Student Number</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="fas fa-id-card text-secondary"></i></span>
-              <input
-                type="text"
-                name="student_number"
-                class="form-control {% if errors.student_number %}is-invalid{% endif %}"
-                placeholder="e.g., 2026-0001"
-                value="{{ form_data.student_number|default:'' }}">
-              {% if errors.student_number %}
-              <div class="invalid-feedback">{{ errors.student_number }}</div>
-              {% endif %}
-            </div>
-            <small class="text-secondary">Used to generate your initial password. Keep it private.</small>
-          </div>
+          <!-- Student number is generated automatically after registration. -->
 
           <!-- Sex & Age -->
           <div class="row g-3 mb-3">

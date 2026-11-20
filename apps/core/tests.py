@@ -132,7 +132,6 @@ class RegistrationTests(TestCase):
             'first_name': 'New',
             'last_name': 'Student',
             'email': 'new@example.com',
-            'student_number': '2026-100',
             'sex': 'M',
             'age': '20',
             'contact_no': '555-0100',
@@ -141,38 +140,49 @@ class RegistrationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'auth/register_success.html')
         generated_password = response.context['generated_password']
+        student_number = response.context['student_number']
         self.assertContains(response, generated_password)
+        self.assertContains(response, student_number)
+        self.assertRegex(student_number, rf"^{timezone.localdate().year}-\d{{4}}$")
         student = Student.objects.get(email__iexact='new@example.com')
+        self.assertEqual(student.student_number, student_number)
         self.assertEqual(student.sex, 'M')
         self.assertEqual(student.age, 20)
         self.assertEqual(student.contact_no, '555-0100')
         user = get_user_model().objects.get(username='newstudent')
         self.assertTrue(user.groups.filter(name='student').exists())
         self.assertTrue(user.check_password(generated_password))
-        self.assertFalse(user.check_password('2026-100'))
+        self.assertNotEqual(generated_password, student_number)
         self.assertTrue(PasswordState.objects.get(user=user).must_change_password)
 
     def test_register_notice_describes_generated_password(self):
         html = self.client.get(reverse('register')).content.decode()
 
-        self.assertIn('We generate a secure initial password', html)
+        self.assertIn('generated automatically', html)
+        self.assertIn('We also generate a secure initial password', html)
+        self.assertNotIn('name="student_number"', html)
         self.assertNotIn('serves as your password', html.lower())
         self.assertNotIn('This will be your password', html)
 
-    def test_register_student_requires_student_number(self):
-        response = self.client.post(reverse('register'), {
-            'username': 'newstudent2',
-            'first_name': 'New',
-            'last_name': 'Student',
-            'email': 'new2@example.com',
-            'student_number': '',
-            'sex': 'M',
-            'age': '20',
-            'contact_no': '555-0100',
-        })
+    def test_register_generates_unique_student_numbers(self):
+        for index in (1, 2):
+            response = self.client.post(reverse('register'), {
+                'username': f'newstudent{index}',
+                'first_name': 'New',
+                'last_name': f'Student{index}',
+                'email': f'new{index}@example.com',
+                'sex': 'M',
+                'age': '20',
+                'contact_no': '555-0100',
+            })
+            self.assertEqual(response.status_code, 200)
+            self.assertTemplateUsed(response, 'auth/register_success.html')
 
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(get_user_model().objects.filter(username='newstudent2').exists())
+        numbers = list(Student.objects.values_list('student_number', flat=True))
+        self.assertEqual(len(numbers), 2)
+        self.assertNotEqual(numbers[0], numbers[1])
+        for number in numbers:
+            self.assertRegex(number, rf"^{timezone.localdate().year}-\d{{4}}$")
 
     def test_register_requires_sex_age_and_contact_info(self):
         response = self.client.post(reverse('register'), {
@@ -180,7 +190,6 @@ class RegistrationTests(TestCase):
             'first_name': 'New',
             'last_name': 'Student',
             'email': 'new3@example.com',
-            'student_number': '2026-101',
             'sex': '',
             'age': '',
             'contact_no': '',
@@ -198,7 +207,6 @@ class RegistrationTests(TestCase):
             'first_name': 'Placed',
             'last_name': 'Student',
             'email': 'placed@example.com',
-            'student_number': '2026-102',
             'sex': 'F',
             'age': '21',
             'contact_no': '555-0199',

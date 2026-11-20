@@ -99,13 +99,6 @@ def _validate_registration_data(data):
             if User.objects.filter(email=email).exists():
                 errors['email'] = 'Email already registered.'
 
-    student_number = data.get('student_number', '').strip()
-
-    if not student_number:
-        errors['student_number'] = 'Student number is required.'
-    elif Student.objects.filter(student_number=student_number).exists():
-        errors['student_number'] = 'Student number already taken.'
-
     sex = data.get('sex', '').strip()
     if sex not in ('M', 'F'):
         errors['sex'] = 'Select a valid sex.'
@@ -693,7 +686,6 @@ def register_view(request):
         'first_name': request.POST.get('first_name', ''),
         'last_name': request.POST.get('last_name', ''),
         'email': request.POST.get('email', ''),
-        'student_number': request.POST.get('student_number', ''),
         'sex': request.POST.get('sex', ''),
         'age': request.POST.get('age', ''),
         'contact_no': request.POST.get('contact_no', ''),
@@ -703,7 +695,7 @@ def register_view(request):
     if errors:
         return render(request, 'auth/register.html', {'errors': errors, 'form_data': form_data})
 
-    student_number = form_data['student_number'].strip()
+    student_number = _unique_student_number()
     generated_password = _generate_student_password(
         form_data['first_name'].strip(),
         form_data['last_name'].strip(),
@@ -734,6 +726,7 @@ def register_view(request):
 
     return render(request, 'auth/register_success.html', {
         'username': user.username,
+        'student_number': student_number,
         'generated_password': generated_password,
     })
 
@@ -848,11 +841,14 @@ def accounts_view(request):
 
 
 def _unique_student_number():
-    from uuid import uuid4
+    """Generate a sequential student number like 2026-0001 for the current year."""
+    prefix = f'{timezone.localdate().year}-'
+    next_number = Student.objects.filter(student_number__startswith=prefix).count() + 1
     while True:
-        candidate = f'OJT-{uuid4().hex[:6].upper()}'
+        candidate = f'{prefix}{next_number:04d}'
         if not Student.objects.filter(student_number=candidate).exists():
             return candidate
+        next_number += 1
 
 
 @admin_required

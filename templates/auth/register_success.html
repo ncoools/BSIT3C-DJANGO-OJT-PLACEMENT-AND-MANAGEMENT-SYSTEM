@@ -38,7 +38,7 @@
           <span class="dh-brand fw-bold fs-4 dh-brand-highlight">PlaceIT</span>
         </div>
         <h2 class="h5 text-center mb-3">Account created</h2>
-        <p class="text-secondary text-center mb-4">Save your initial password now. It will not be shown again.</p>
+        <p class="text-secondary text-center mb-4">Save your student number and initial password now. They will not be shown again.</p>
 
         <div class="alert alert-warning d-flex align-items-start" role="alert">
           <i class="fas fa-shield-halved mt-1"></i>
@@ -49,6 +49,8 @@
         <div class="credentials mb-4">
           <div class="text-secondary small">Username</div>
           <div class="fw-semibold mb-3">{{ username }}</div>
+          <div class="text-secondary small">Student number</div>
+          <div class="fw-semibold mb-3">{{ student_number }}</div>
           <div class="text-secondary small">Initial password</div>
           <div class="fw-semibold" style="word-break: break-all;">{{ generated_password }}</div>
         </div>
