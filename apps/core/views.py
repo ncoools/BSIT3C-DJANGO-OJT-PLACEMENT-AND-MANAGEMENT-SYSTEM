@@ -3,6 +3,7 @@ import string
 from datetime import date, datetime, time, timedelta
 
 from apps import authz
+from apps.core.dashboard_alerts import admin_alerts, student_alerts, supervisor_alerts
 from apps.core.models import PasswordResetPIN, PasswordState
 
 from django.contrib import messages
@@ -359,6 +360,7 @@ def home(request):
         'total_required_hours': total_required_hours,
         'unread_notifications': unread_notifications,
         'recent_notifications': recent_notifications,
+        'dashboard_alerts': admin_alerts(),
     }
 
     return render(request, 'home.html', context)
@@ -443,6 +445,7 @@ def student_dashboard(request):
         'from_date': from_date,
         'to_date': to_date,
         'hours_pct': round((completed_hours / required_hours * 100), 1) if required_hours else 0,
+        'dashboard_alerts': student_alerts(student),
     }
 
     return render(request, 'student_dashboard.html', context)
@@ -656,6 +659,7 @@ def supervisor_dashboard(request):
         'completed_today': completed_today,
         'not_clocked_in': not_clocked_in,
         'first_placement_id': placements[0].pk if placements else None,
+        'dashboard_alerts': supervisor_alerts(supervisor),
     }
 
     return render(request, 'supervisor_dashboard.html', context)

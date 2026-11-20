@@ -101,6 +101,8 @@
 
     {% for message in messages %}<div class="alert alert-success">{{ message }}</div>{% endfor %}
 
+    {% include 'theme/dashboard_alerts.html' %}
+
     <section class="grid stats">
       <div class="card stat">
         <span class="ic">💼</span>

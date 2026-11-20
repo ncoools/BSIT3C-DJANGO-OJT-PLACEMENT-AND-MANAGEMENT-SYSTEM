@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, time, timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -10,7 +10,7 @@ from django.utils import timezone
 from apps import authz
 from apps.core.models import PasswordResetPIN, PasswordState
 from apps.companies.models import Company
-from apps.placements.models import Attendance, Placement
+from apps.placements.models import Attendance, Placement, PlacementRequirement
 from apps.students.models import Student
 from apps.supervisors.models import Supervisor
 
@@ -580,4 +580,98 @@ class VerifiedAttendanceClockTests(TestCase):
         self.attendance.refresh_from_db()
         self.assertEqual(self.attendance.time_out, time(17, 0))
         self.assertEqual(self.attendance.hours_rendered, 8)
+
+
+class DashboardAlertTests(TestCase):
+    def setUp(self):
+        self.today = timezone.localdate()
+        self.admin = get_user_model().objects.create_user(
+            username='alertadmin', password='secret1234', is_staff=True,
+        )
+        self.student_user = get_user_model().objects.create_user(
+            username='alertstudent', password='secret1234',
+            email='alertstudent@example.com',
+        )
+        self.student = Student.objects.create(
+            student_number='ALERT-001', first_name='Alert', last_name='Student',
+            email='alertstudent@example.com',
+        )
+        self.supervisor_user = get_user_model().objects.create_user(
+            username='alertsup', password='secret1234',
+            email='alertsup@example.com',
+        )
+        self.supervisor = Supervisor.objects.create(
+            first_name='Alert', last_name='Supervisor',
+            supervisor_type=Supervisor.Type.COMPANY, email='alertsup@example.com',
+        )
+        self.company = Company.objects.create(company_name='Alert Company')
+        self.placement = Placement.objects.create(
+            student=self.student, company=self.company, supervisor=self.supervisor,
+            start_date=self.today - timedelta(days=30),
+            end_date=self.today + timedelta(days=7),
+            required_hours=500, completed_hours=100,
+            status=Placement.Status.IN_PROGRESS,
+        )
+        Student.objects.create(
+            student_number='ALERT-002', first_name='No', last_name='Placement',
+        )
+        inactive_user = get_user_model().objects.create_user(
+            username='inactivesup', password='secret1234',
+            email='inactive-sup@example.com', is_active=False,
+        )
+        Supervisor.objects.create(
+            first_name='Inactive', last_name='Supervisor',
+            supervisor_type=Supervisor.Type.COMPANY, email=inactive_user.email,
+        )
+        PlacementRequirement.objects.create(
+            placement=self.placement, requirement_name='Contract',
+            status=PlacementRequirement.Status.PENDING,
+        )
+        Attendance.objects.create(
+            placement=self.placement,
+            attendance_date=self.today - timedelta(days=3),
+            time_in=time(9, 0), time_out=time(17, 0), verified=False,
+        )
+
+    def test_admin_dashboard_shows_live_alerts(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('dashboard'))
+
+        alerts = {alert['id'] for alert in response.context['dashboard_alerts']}
+        self.assertEqual(alerts, {
+            'unplaced-students',
+            'pending-approvals',
+            'pending-requirements',
+            'placements-ending',
+            'unverified-attendance',
+        })
+        self.assertContains(response, 'Dashboard alerts')
+        self.assertContains(response, 'Students not yet placed')
+
+    def test_student_dashboard_shows_live_alerts(self):
+        self.client.force_login(self.student_user)
+
+        response = self.client.get(reverse('student_dashboard'))
+
+        alerts = {alert['id'] for alert in response.context['dashboard_alerts']}
+        self.assertEqual(alerts, {
+            'attendance-awaiting-verification',
+            'requirements-to-submit',
+            'placement-ending',
+        })
+        self.assertContains(response, 'Attendance awaiting verification')
+
+    def test_supervisor_dashboard_shows_live_alerts(self):
+        self.client.force_login(self.supervisor_user)
+
+        response = self.client.get(reverse('supervisor_dashboard'))
+
+        alerts = {alert['id'] for alert in response.context['dashboard_alerts']}
+        self.assertEqual(alerts, {
+            'unverified-attendance',
+            'evaluations-due',
+            'hours-behind',
+        })
+        self.assertContains(response, 'Evaluations due')
 

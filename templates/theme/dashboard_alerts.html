@@ -1,0 +1,14 @@
+{% if dashboard_alerts %}
+<section class="dh-alert-strip" aria-label="Dashboard alerts">
+  {% for alert in dashboard_alerts %}
+  <a class="dh-alert-card severity-{{ alert.severity }}" href="{{ alert.link }}">
+    <span class="dh-alert-icon"><i class="fa {{ alert.icon }}"></i></span>
+    <span class="dh-alert-copy">
+      <span class="dh-alert-title">{{ alert.title }} <span class="dh-alert-count">{{ alert.count }}</span></span>
+      <span class="dh-alert-message">{{ alert.message }}</span>
+      <span class="dh-alert-link">{{ alert.link_label }} <i class="fa fa-arrow-right"></i></span>
+    </span>
+  </a>
+  {% endfor %}
+</section>
+{% endif %}
