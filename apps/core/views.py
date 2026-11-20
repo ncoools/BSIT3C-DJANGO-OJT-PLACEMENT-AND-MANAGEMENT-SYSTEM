@@ -1,10 +1,14 @@
+import secrets
+import string
 from datetime import date, datetime, timedelta
 
 from apps import authz
+from apps.core.models import PasswordResetPIN, PasswordState
 
 from django.contrib import messages
-from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.contrib.auth import authenticate, get_user_model, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -94,15 +98,55 @@ def _validate_registration_data(data):
             if User.objects.filter(email=email).exists():
                 errors['email'] = 'Email already registered.'
 
-    # Students sign in with their student number as the password
     student_number = data.get('student_number', '').strip()
 
     if not student_number:
-        errors['student_number'] = 'Student number is required (it becomes your password).'
+        errors['student_number'] = 'Student number is required.'
     elif Student.objects.filter(student_number=student_number).exists():
         errors['student_number'] = 'Student number already taken.'
 
     return errors
+
+
+PIN_LIFETIME = timedelta(minutes=10)
+
+
+def _generate_student_password(first_name, last_name, student_number):
+    """Build a unique initial password from the student's identity plus a random suffix."""
+    letters = ''.join(ch for ch in f'{first_name}{last_name}' if ch.isalnum())
+    numbers = ''.join(ch for ch in student_number if ch.isalnum())
+    suffix = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(8))
+    return f"{(letters[:12] or 'Student').capitalize()}{(numbers[-8:] or 'OJT')}!{suffix}"
+
+
+def _has_forced_password_change(user):
+    state = getattr(user, 'password_state', None)
+    return bool(user and user.is_authenticated and state and state.must_change_password)
+
+
+def _issue_password_reset_pin(user):
+    pin = f'{secrets.randbelow(1_000_000):06d}'
+    now = timezone.now()
+    PasswordResetPIN.objects.filter(user=user, used_at__isnull=True).update(used_at=now)
+    record = PasswordResetPIN.objects.create(
+        user=user,
+        pin_hash=make_password(pin),
+        expires_at=now + PIN_LIFETIME,
+    )
+    return pin, record
+
+
+def _find_user_by_identity(identity):
+    identity = (identity or '').strip()
+    if not identity:
+        return None
+    user = User.objects.filter(Q(username__iexact=identity) | Q(email__iexact=identity)).first()
+    if user:
+        return user
+    student = Student.objects.filter(student_number__iexact=identity).first()
+    if student and student.email:
+        return User.objects.filter(email__iexact=student.email).first()
+    return None
 
 
 def _validate_supervisor_registration_data(data):
@@ -170,6 +214,8 @@ def login_view(request):
     if user is not None:
         _reset_lock_state(request)
         login(request, user)
+        if _has_forced_password_change(user):
+            return redirect('password_change')
         return redirect('dashboard')
 
     # Surface a clear message when the account exists but is still pending approval
@@ -627,13 +673,17 @@ def register_view(request):
         return render(request, 'auth/register.html', {'errors': errors, 'form_data': form_data})
 
     student_number = form_data['student_number'].strip()
-    # The student's password is their student number for a frictionless first login
+    generated_password = _generate_student_password(
+        form_data['first_name'].strip(),
+        form_data['last_name'].strip(),
+        student_number,
+    )
     user = User.objects.create_user(
         username=form_data['username'].strip(),
         first_name=form_data['first_name'].strip(),
         last_name=form_data['last_name'].strip(),
         email=form_data['email'].strip(),
-        password=student_number,
+        password=generated_password,
     )
 
     Student.objects.create(
@@ -642,9 +692,16 @@ def register_view(request):
         last_name=user.last_name,
         email=user.email,
     )
+    PasswordState.objects.create(
+        user=user,
+        must_change_password=True,
+        generated_at=timezone.now(),
+    )
 
-    login(request, user)
-    return redirect('dashboard')
+    return render(request, 'auth/register_success.html', {
+        'username': user.username,
+        'generated_password': generated_password,
+    })
 
 
 @login_required(login_url='login')
@@ -817,6 +874,83 @@ def account_action(request, user_id):
         target.is_staff = not target.is_staff
         target.save(update_fields=['is_staff'])
         messages.success(request, f'{target.username} staff access {"granted" if target.is_staff else "revoked"}.')
+    elif action == 'generate_pin':
+        if not target.groups.filter(name='student').exists():
+            messages.error(request, 'Password reset PINs can only be issued to student accounts.')
+            return redirect('accounts')
+        pin, record = _issue_password_reset_pin(target)
+        return render(request, 'auth/password_pin_generated.html', {
+            'target': target,
+            'pin': pin,
+            'expires_at': record.expires_at,
+        })
     else:
         messages.error(request, 'Unknown action.')
     return redirect('accounts')
+
+
+@require_http_methods(['GET', 'POST'])
+def password_change_view(request):
+    """Change a generated password at first login, or use an admin-issued PIN."""
+    forced_change = _has_forced_password_change(request.user)
+    errors = {}
+    form_data = {
+        'identity': request.POST.get('identity', ''),
+        'pin': request.POST.get('pin', ''),
+    }
+
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+
+        if not new_password:
+            errors['new_password'] = 'New password is required.'
+        elif new_password != confirm_password:
+            errors['confirm_password'] = 'Passwords do not match.'
+
+        user = request.user if forced_change else None
+        reset_record = None
+
+        if not forced_change:
+            if not form_data['identity'].strip():
+                errors['identity'] = 'Enter your username, email, or student number.'
+            if not form_data['pin'].strip():
+                errors['pin'] = 'Enter the PIN issued by your administrator.'
+            if not errors.get('identity'):
+                user = _find_user_by_identity(form_data['identity'])
+                if not user:
+                    errors['identity'] = 'No matching account was found.'
+
+        if user and not errors:
+            try:
+                validate_password(new_password, user)
+            except ValidationError as exc:
+                errors['new_password'] = ' '.join(exc.messages)
+
+        if not forced_change and user and not errors:
+            reset_record = PasswordResetPIN.objects.filter(
+                user=user,
+                used_at__isnull=True,
+                expires_at__gt=timezone.now(),
+            ).order_by('-created_at').first()
+            if not reset_record or not reset_record.verify(form_data['pin'].strip()):
+                errors['pin'] = 'PIN is invalid, expired, or already used.'
+
+        if not errors and user is not None:
+            user.set_password(new_password)
+            user.save(update_fields=['password'])
+            PasswordState.objects.update_or_create(
+                user=user,
+                defaults={'must_change_password': False},
+            )
+            if request.user.is_authenticated and request.user.pk == user.pk:
+                update_session_auth_hash(request, user)
+                return redirect('dashboard')
+            messages.success(request, 'Password changed. Sign in with your new password.')
+            return redirect('login')
+
+    return render(request, 'auth/password_change.html', {
+        'errors': errors,
+        'form_data': form_data,
+        'forced_change': forced_change,
+    })

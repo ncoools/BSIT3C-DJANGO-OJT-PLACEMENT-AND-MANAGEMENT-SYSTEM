@@ -1,4 +1,5 @@
 from datetime import date, time
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -7,6 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps import authz
+from apps.core.models import PasswordResetPIN, PasswordState
 from apps.companies.models import Company
 from apps.placements.models import Attendance, Placement
 from apps.students.models import Student
@@ -133,11 +135,23 @@ class RegistrationTests(TestCase):
             'student_number': '2026-100',
         })
 
-        self.assertRedirects(response, reverse('dashboard'), fetch_redirect_response=False)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'auth/register_success.html')
+        generated_password = response.context['generated_password']
+        self.assertContains(response, generated_password)
         self.assertTrue(Student.objects.filter(email__iexact='new@example.com').exists())
         user = get_user_model().objects.get(username='newstudent')
         self.assertTrue(user.groups.filter(name='student').exists())
-        self.assertTrue(user.check_password('2026-100'))
+        self.assertTrue(user.check_password(generated_password))
+        self.assertFalse(user.check_password('2026-100'))
+        self.assertTrue(PasswordState.objects.get(user=user).must_change_password)
+
+    def test_register_notice_describes_generated_password(self):
+        html = self.client.get(reverse('register')).content.decode()
+
+        self.assertIn('We generate a secure initial password', html)
+        self.assertNotIn('serves as your password', html.lower())
+        self.assertNotIn('This will be your password', html)
 
     def test_register_student_requires_student_number(self):
         response = self.client.post(reverse('register'), {
@@ -228,6 +242,140 @@ class RegistrationTests(TestCase):
         self.client.force_login(user)
         response = self.client.get(reverse('approvals'))
         self.assertRedirects(response, reverse('dashboard'), fetch_redirect_response=False)
+
+
+class PasswordFlowTests(TestCase):
+    def _create_student_user(self, username='pwstudent', email='pwstudent@example.com'):
+        user = get_user_model().objects.create_user(
+            username=username, password='initial-pass-123', email=email,
+        )
+        Student.objects.create(
+            student_number='PW-100', first_name='Pass', last_name='Student', email=email,
+        )
+        return user
+
+    def test_generated_password_user_is_forced_to_change(self):
+        user = self._create_student_user()
+        PasswordState.objects.create(user=user, must_change_password=True)
+        self.client.force_login(user)
+
+        dashboard_response = self.client.get(reverse('dashboard'))
+        placements_response = self.client.get(reverse('placements:list'))
+        change_response = self.client.get(reverse('password_change'))
+
+        self.assertRedirects(dashboard_response, reverse('password_change'), fetch_redirect_response=False)
+        self.assertRedirects(placements_response, reverse('password_change'), fetch_redirect_response=False)
+        self.assertEqual(change_response.status_code, 200)
+
+    def test_forced_password_change_clears_flag(self):
+        user = self._create_student_user()
+        PasswordState.objects.create(user=user, must_change_password=True)
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('password_change'), {
+            'new_password': 'MyNewPass!456',
+            'confirm_password': 'MyNewPass!456',
+        })
+
+        self.assertRedirects(response, reverse('dashboard'), fetch_redirect_response=False)
+        user.refresh_from_db()
+        self.assertTrue(user.check_password('MyNewPass!456'))
+        self.assertFalse(PasswordState.objects.get(user=user).must_change_password)
+        self.assertRedirects(
+            self.client.get(reverse('dashboard')),
+            reverse('student_dashboard'),
+            fetch_redirect_response=False,
+        )
+
+    def test_login_redirects_forced_user_to_password_change(self):
+        user = self._create_student_user()
+        PasswordState.objects.create(user=user, must_change_password=True)
+
+        response = self.client.post(reverse('login'), {
+            'username': 'pwstudent',
+            'password': 'initial-pass-123',
+        })
+
+        self.assertRedirects(response, reverse('password_change'), fetch_redirect_response=False)
+
+    def test_admin_can_issue_pin_and_student_can_use_it_once(self):
+        admin = get_user_model().objects.create_user(
+            username='pinadmin', password='secret1234', is_staff=True,
+        )
+        student = self._create_student_user()
+        self.client.force_login(admin)
+
+        with patch('apps.core.views.secrets.randbelow', return_value=654321):
+            response = self.client.post(
+                reverse('account_action', args=[student.pk]),
+                {'action': 'generate_pin'},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '654321')
+        record = PasswordResetPIN.objects.get(user=student)
+        self.assertNotEqual(record.pin_hash, '654321')
+        self.assertIsNone(record.used_at)
+
+        self.client.logout()
+        response = self.client.post(reverse('password_change'), {
+            'identity': 'PW-100',
+            'pin': '654321',
+            'new_password': 'ResetPass!789',
+            'confirm_password': 'ResetPass!789',
+        })
+
+        self.assertRedirects(response, reverse('login'), fetch_redirect_response=False)
+        student.refresh_from_db()
+        record.refresh_from_db()
+        self.assertTrue(student.check_password('ResetPass!789'))
+        self.assertIsNotNone(record.used_at)
+
+        reuse_response = self.client.post(reverse('password_change'), {
+            'identity': 'PW-100',
+            'pin': '654321',
+            'new_password': 'AnotherPass!123',
+            'confirm_password': 'AnotherPass!123',
+        })
+        self.assertEqual(reuse_response.status_code, 200)
+        self.assertContains(reuse_response, 'PIN is invalid, expired, or already used.')
+
+    def test_pin_is_not_shown_again_on_accounts_page(self):
+        admin = get_user_model().objects.create_user(
+            username='pinadmin2', password='secret1234', is_staff=True,
+        )
+        student = self._create_student_user(username='pinstudent2')
+        self.client.force_login(admin)
+
+        with patch('apps.core.views.secrets.randbelow', return_value=654321):
+            self.client.post(
+                reverse('account_action', args=[student.pk]),
+                {'action': 'generate_pin'},
+            )
+        response = self.client.get(reverse('accounts'))
+
+        self.assertNotContains(response, '654321')
+
+    def test_admin_cannot_issue_pin_to_non_student(self):
+        admin = get_user_model().objects.create_user(
+            username='pinadmin3', password='secret1234', is_staff=True,
+        )
+        supervisor = get_user_model().objects.create_user(
+            username='pinsup', password='secret1234', email='pinsup@example.com',
+        )
+        Supervisor.objects.create(
+            first_name='Pin', last_name='Sup',
+            supervisor_type=Supervisor.Type.COMPANY, email='pinsup@example.com',
+        )
+        self.client.force_login(admin)
+
+        response = self.client.post(
+            reverse('account_action', args=[supervisor.pk]),
+            {'action': 'generate_pin'},
+        )
+
+        self.assertRedirects(response, reverse('accounts'), fetch_redirect_response=False)
+        self.assertFalse(PasswordResetPIN.objects.filter(user=supervisor).exists())
 
 
 class AccountsViewTests(TestCase):

@@ -16,7 +16,7 @@
 
   <div class="alert alert-info d-flex align-items-start">
     <i class="fas fa-info-circle mt-1"></i>
-    <span>Use the buttons below to set a role, activate an account, or change staff access. Your own account and superuser accounts are protected.</span>
+    <span>Use the buttons below to set a role, activate an account, change staff access, or issue a one-time password reset PIN to a student. Your own account and superuser accounts are protected.</span>
   </div>
 
   <form method="get" class="mb-3">
@@ -85,6 +85,13 @@
                     <input type="hidden" name="action" value="clear_role">
                     <button class="btn btn-sm btn-outline-secondary" type="submit" title="Remove role (plain account)">Clear Role</button>
                   </form>
+                  {% if row.role == 'student' %}
+                  <form method="post" action="{% url 'account_action' row.account.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="generate_pin">
+                    <button class="btn btn-sm btn-outline-warning" type="submit" title="Issue a one-time password reset PIN">Reset PIN</button>
+                  </form>
+                  {% endif %}
                   <form method="post" action="{% url 'account_action' row.account.pk %}">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="toggle_active">
