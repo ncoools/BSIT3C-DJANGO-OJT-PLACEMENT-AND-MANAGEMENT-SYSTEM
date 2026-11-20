@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from apps import authz
 from apps.companies.models import Company
 from apps.placements.models import Attendance, Placement
 from apps.students.models import Student
@@ -201,6 +202,23 @@ class AccountsViewTests(TestCase):
         self.assertRedirects(response, reverse('accounts'), fetch_redirect_response=False)
         self.assertFalse(self.target.groups.filter(name__in=['student', 'supervisor']).exists())
 
+    def test_clear_role_does_not_grant_admin_access(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse('account_action', args=[self.target.pk]), {'action': 'set_supervisor'})
+        self.client.post(reverse('account_action', args=[self.target.pk]), {'action': 'clear_role'})
+
+        target = get_user_model().objects.get(pk=self.target.pk)
+        self.assertFalse(target.groups.filter(name__in=['student', 'supervisor']).exists())
+        self.assertFalse(authz.is_admin(target))
+        self.client.force_login(target)
+        response = self.client.get(reverse('accounts'))
+        self.assertNotEqual(response.status_code, 200)
+
+    def test_non_staff_without_role_is_not_admin(self):
+        user = get_user_model().objects.create_user(username='norole', password='secret1234')
+
+        self.assertFalse(authz.is_admin(user))
+
     def test_admin_can_toggle_active(self):
         self.client.force_login(self.admin)
         response = self.client.post(reverse('account_action', args=[self.target.pk]), {'action': 'toggle_active'})
@@ -241,7 +259,7 @@ class AccountsViewTests(TestCase):
 class AdminModuleAccessTests(TestCase):
     def setUp(self):
         User = get_user_model()
-        self.admin = User.objects.create_user(username='admin', password='secret1234', email='admin@example.com')
+        self.admin = User.objects.create_user(username='admin', password='secret1234', email='admin@example.com', is_staff=True)
         self.student_user = User.objects.create_user(username='stud', password='secret1234', email='stud@example.com')
         Student.objects.create(student_number='ACC-001', first_name='Stu', last_name='Dent', email='stud@example.com')
         self.supervisor_user = User.objects.create_user(username='sup', password='secret1234', email='sup@example.com')

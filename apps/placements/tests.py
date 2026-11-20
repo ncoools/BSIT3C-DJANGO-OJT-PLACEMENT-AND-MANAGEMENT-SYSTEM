@@ -1,6 +1,7 @@
 from datetime import date, time
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.exceptions import ValidationError
@@ -18,7 +19,7 @@ from .views import placement_list
 
 class PlacementTests(TestCase):
     def setUp(self):
-        self.user = get_user_model().objects.create_user(username='tester', password='test-password')
+        self.user = get_user_model().objects.create_user(username='tester', password='test-password', is_staff=True)
         self.client.force_login(self.user)
         self.student = Student.objects.create(
             student_number='2026-001',
@@ -106,7 +107,7 @@ class PlacementPermissionTests(TestCase):
 
     def setUp(self):
         User = get_user_model()
-        self.admin_user = User.objects.create_user(username='admin', password='test-password', email='admin@example.com')
+        self.admin_user = User.objects.create_user(username='admin', password='test-password', email='admin@example.com', is_staff=True)
         self.supervisor_user = User.objects.create_user(username='sup', password='test-password', email='sup@example.com')
         self.other_supervisor_user = User.objects.create_user(username='sup2', password='test-password', email='sup2@example.com')
         self.student_user = User.objects.create_user(username='stud', password='test-password', email='stud@example.com')
@@ -188,6 +189,30 @@ class PlacementPermissionTests(TestCase):
         response = self.client.get(reverse('placements:evaluation_list', args=[self.other_placement.pk]))
         self.assertEqual(response.status_code, 403)
 
+    def test_supervisor_profile_without_role_group_cannot_manage_placement(self):
+        Group.objects.get_or_create(name='supervisor')[0].user_set.remove(self.supervisor_user)
+        self._login(self.supervisor_user)
+
+        response = self.client.get(reverse('placements:update', args=[self.placement.pk]))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_student_profile_without_role_group_cannot_view_placement(self):
+        Group.objects.get_or_create(name='student')[0].user_set.remove(self.student_user)
+        self._login(self.student_user)
+
+        response = self.client.get(reverse('placements:evaluation_list', args=[self.placement.pk]))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_non_staff_without_role_cannot_manage_placement(self):
+        user = get_user_model().objects.create_user(username='norole', password='test-password')
+        self._login(user)
+
+        response = self.client.get(reverse('placements:update', args=[self.placement.pk]))
+
+        self.assertEqual(response.status_code, 403)
+
     def test_post_cannot_reparent_requirement_to_other_placement(self):
         self._login(self.supervisor_user)
         response = self.client.post(reverse('placements:requirement_create', args=[self.placement.pk]), {
@@ -234,7 +259,7 @@ class AttendanceIntegrityTests(TestCase):
 
     def setUp(self):
         User = get_user_model()
-        self.admin_user = User.objects.create_user(username='admin', password='test-password', email='admin@example.com')
+        self.admin_user = User.objects.create_user(username='admin', password='test-password', email='admin@example.com', is_staff=True)
         self.supervisor_user = User.objects.create_user(username='sup', password='test-password', email='sup@example.com')
         self.student_user = User.objects.create_user(username='stud', password='test-password', email='stud@example.com')
 
@@ -312,14 +337,14 @@ class PdfReportTests(TestCase):
 
     def setUp(self):
         User = get_user_model()
-        self.admin_user = User.objects.create_user(username='admin', password='test-password', email='admin@example.com')
+        self.admin_user = User.objects.create_user(username='admin', password='test-password', email='admin@example.com', is_staff=True)
         self.supervisor_user = User.objects.create_user(username='sup', password='test-password', email='sup@example.com')
         self.student_user = User.objects.create_user(username='stud', password='test-password', email='stud@example.com')
 
         self.company = Company.objects.create(company_name='North Star')
         self.supervisor = Supervisor.objects.create(
             first_name='Alex', last_name='Smith', supervisor_type=Supervisor.Type.COMPANY,
-            company=self.company,
+            company=self.company, email='sup@example.com',
         )
         self.student = Student.objects.create(
             student_number='2026-001', first_name='Jamie', last_name='Doe',

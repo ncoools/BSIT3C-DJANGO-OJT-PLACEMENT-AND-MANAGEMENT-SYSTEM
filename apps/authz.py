@@ -41,12 +41,10 @@ def is_supervisor(user):
 
 
 def is_admin(user):
-    """Admins are staff/superusers, or authenticated users with no student/supervisor profile."""
+    """Only Django staff/superusers have administrator access."""
     if not user or not user.is_authenticated:
         return False
-    if user.is_staff or user.is_superuser:
-        return True
-    return not is_student(user) and not is_supervisor(user)
+    return bool(user.is_staff or user.is_superuser)
 
 
 def user_role(user):
@@ -60,26 +58,32 @@ def user_role(user):
 
 
 def can_manage_placement(user, placement):
-    """Admins manage any placement; supervisors can only manage their own."""
+    """Admins manage any placement; active supervisors only manage their own."""
     if not user or not user.is_authenticated:
         return False
     if is_admin(user):
         return True
+    if not is_supervisor(user):
+        return False
     supervisor = current_supervisor(user)
     return bool(supervisor and placement.supervisor_id == supervisor.pk)
 
 
 def can_view_placement(user, placement):
-    """Admins, the assigned supervisor, and the placement's student may view it."""
+    """Admins, the active assigned supervisor, and the active student may view it."""
     if not user or not user.is_authenticated:
         return False
     if is_admin(user):
         return True
-    supervisor = current_supervisor(user)
-    if supervisor and placement.supervisor_id == supervisor.pk:
-        return True
-    student = current_student(user)
-    return bool(student and placement.student_id == student.pk)
+    if is_supervisor(user):
+        supervisor = current_supervisor(user)
+        if supervisor and placement.supervisor_id == supervisor.pk:
+            return True
+    if is_student(user):
+        student = current_student(user)
+        if student and placement.student_id == student.pk:
+            return True
+    return False
 
 
 def get_placement_for_user(request, pk, manage=False):

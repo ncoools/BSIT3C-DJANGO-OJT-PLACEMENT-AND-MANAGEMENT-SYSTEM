@@ -39,7 +39,7 @@ class SupervisorModelTests(TestCase):
 
 class SupervisorViewTests(TestCase):
     def setUp(self):
-        self.user = get_user_model().objects.create_user(username='tester', password='test-password')
+        self.user = get_user_model().objects.create_user(username='tester', password='test-password', is_staff=True)
         self.client.force_login(self.user)
         self.company = Company.objects.create(company_name='North Star')
 
