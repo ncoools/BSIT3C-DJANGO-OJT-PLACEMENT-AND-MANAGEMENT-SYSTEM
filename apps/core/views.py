@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db.models import Count, Sum, Q
@@ -200,11 +200,13 @@ def logout_view(request):
 
 @login_required(login_url='login')
 def home(request):
-    email = getattr(request.user, 'email', '') or ''
-    if email and Student.objects.filter(email__iexact=email).exists():
+    role = authz.user_role(request.user)
+    if role == 'student':
         return redirect('student_dashboard')
-    if email and Supervisor.objects.filter(email__iexact=email).exists():
+    if role == 'supervisor':
         return redirect('supervisor_dashboard')
+    if role != 'admin':
+        raise PermissionDenied('Your account has no assigned role. Please contact an administrator.')
 
     total_students = Student.objects.count()
     partner_companies = Company.objects.count()
@@ -310,11 +312,11 @@ def home(request):
 @login_required(login_url='login')
 def student_dashboard(request):
     email = getattr(request.user, 'email', '') or ''
-    if Supervisor.objects.filter(email__iexact=email).exists():
+    if authz.user_role(request.user) == 'supervisor':
         return redirect('supervisor_dashboard')
     student = Student.objects.filter(email__iexact=email).first()
     if not student:
-        return redirect('dashboard')
+        raise PermissionDenied('No student profile is linked to this account.')
 
     placements = list(
         student.placements
@@ -461,11 +463,11 @@ def student_time_out(request):
 @login_required(login_url='login')
 def supervisor_dashboard(request):
     email = getattr(request.user, 'email', '') or ''
-    if Student.objects.filter(email__iexact=email).exists():
+    if authz.user_role(request.user) == 'student':
         return redirect('student_dashboard')
     supervisor = Supervisor.objects.filter(email__iexact=email).first()
     if not supervisor:
-        return redirect('dashboard')
+        raise PermissionDenied('No supervisor profile is linked to this account.')
 
     placements = list(
         supervisor.placements

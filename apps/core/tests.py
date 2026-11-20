@@ -14,8 +14,10 @@ from apps.supervisors.models import Supervisor
 
 
 class HomeViewTests(TestCase):
-    def test_home_renders_for_authenticated_user(self):
-        user = get_user_model().objects.create_user(username='admin', password='secret1234')
+    def test_home_renders_for_admin(self):
+        user = get_user_model().objects.create_user(
+            username='admin', password='secret1234', is_staff=True,
+        )
 
         self.client.force_login(user)
         response = self.client.get(reverse('dashboard'))
@@ -27,6 +29,42 @@ class HomeViewTests(TestCase):
         response = self.client.get(reverse('dashboard'))
 
         self.assertEqual(response.status_code, 302)
+
+    def test_student_is_redirected_to_student_dashboard(self):
+        user = get_user_model().objects.create_user(
+            username='stud', password='secret1234', email='stud@example.com',
+        )
+        Student.objects.create(
+            student_number='HOME-001', first_name='Hom', last_name='Student',
+            email='stud@example.com',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('dashboard'))
+
+        self.assertRedirects(response, reverse('student_dashboard'), fetch_redirect_response=False)
+
+    def test_supervisor_is_redirected_to_supervisor_dashboard(self):
+        user = get_user_model().objects.create_user(
+            username='sup', password='secret1234', email='sup@example.com',
+        )
+        Supervisor.objects.create(
+            first_name='Hom', last_name='Supervisor',
+            supervisor_type=Supervisor.Type.COMPANY, email='sup@example.com',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('dashboard'))
+
+        self.assertRedirects(response, reverse('supervisor_dashboard'), fetch_redirect_response=False)
+
+    def test_user_without_role_gets_forbidden_instead_of_redirect_loop(self):
+        user = get_user_model().objects.create_user(username='norole', password='secret1234')
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('dashboard'))
+
+        self.assertEqual(response.status_code, 403)
 
 
 class RoleGroupSyncTests(TestCase):
