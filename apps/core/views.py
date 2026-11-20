@@ -931,8 +931,10 @@ def password_change_view(request):
     }
 
     if request.method == 'POST':
-        if not window_open:
-            errors['window'] = f'Password changes are available daily from {PASSWORD_CHANGE_WINDOW_LABEL} only.'
+        # First-time setup is always allowed; the evening window only
+        # applies to PIN-based resets for users who forgot their password.
+        if not forced_change and not window_open:
+            errors['window'] = f'PIN-based password resets are available daily from {PASSWORD_CHANGE_WINDOW_LABEL} only.'
         else:
             new_password = request.POST.get('new_password', '')
             confirm_password = request.POST.get('confirm_password', '')

@@ -452,22 +452,53 @@ class PasswordFlowTests(TestCase):
         self.assertFalse(PasswordResetPIN.objects.filter(user=supervisor).exists())
 
 
-    def test_password_change_blocked_outside_window(self):
+    def test_forced_password_change_allowed_outside_window(self):
         user = self._create_student_user()
         PasswordState.objects.create(user=user, must_change_password=True)
         self.client.force_login(user)
 
         with patch('apps.core.views._password_change_window_open', return_value=False):
+            page = self.client.get(reverse('password_change'))
             response = self.client.post(reverse('password_change'), {
                 'new_password': 'OutsidePass!123',
                 'confirm_password': 'OutsidePass!123',
             })
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'available daily from 7:00 PM – 10:00 PM only')
+        self.assertContains(page, 'You can do this now, at any time')
+        self.assertNotContains(page, 'reset window is currently closed')
+        self.assertRedirects(response, reverse('dashboard'), fetch_redirect_response=False)
         user.refresh_from_db()
-        self.assertTrue(user.check_password('initial-pass-123'))
-        self.assertTrue(PasswordState.objects.get(user=user).must_change_password)
+        self.assertTrue(user.check_password('OutsidePass!123'))
+        self.assertFalse(PasswordState.objects.get(user=user).must_change_password)
+
+    def test_pin_reset_blocked_outside_window(self):
+        admin = get_user_model().objects.create_user(
+            username='resetwindowadmin', password='secret1234', is_staff=True,
+        )
+        student = self._create_student_user(username='forgotstudent')
+        self.client.force_login(admin)
+        with patch('apps.core.views.secrets.randbelow', return_value=123456):
+            self.client.post(
+                reverse('account_action', args=[student.pk]),
+                {'action': 'generate_pin'},
+            )
+        self.client.logout()
+
+        with patch('apps.core.views._password_change_window_open', return_value=False):
+            response = self.client.post(reverse('password_change'), {
+                'identity': student.username,
+                'pin': '123456',
+                'new_password': 'ResetOutside!123',
+                'confirm_password': 'ResetOutside!123',
+            })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'PIN-based password resets are available daily from 7:00 PM – 10:00 PM only.',
+        )
+        student.refresh_from_db()
+        self.assertTrue(student.check_password('initial-pass-123'))
 
     def test_admin_cannot_issue_pin_outside_window(self):
         admin = get_user_model().objects.create_user(
@@ -485,16 +516,20 @@ class PasswordFlowTests(TestCase):
         self.assertRedirects(response, reverse('accounts'), fetch_redirect_response=False)
         self.assertFalse(PasswordResetPIN.objects.filter(user=student).exists())
 
-    def test_window_note_is_visible(self):
+    def test_window_note_is_for_pin_resets_only(self):
         login_html = self.client.get(reverse('login')).content.decode()
-        self.assertIn('7:00 PM – 10:00 PM', login_html)
+        self.assertIn(
+            'Forgot-password PIN resets are available daily from 7:00 PM – 10:00 PM only.',
+            login_html,
+        )
 
         user = self._create_student_user()
         PasswordState.objects.create(user=user, must_change_password=True)
         self.client.force_login(user)
         response = self.client.get(reverse('password_change'))
 
-        self.assertContains(response, '7:00 PM – 10:00 PM')
+        self.assertContains(response, 'You can do this now, at any time')
+        self.assertNotContains(response, '7:00 PM – 10:00 PM')
 
 
 class AccountsViewTests(TestCase):
